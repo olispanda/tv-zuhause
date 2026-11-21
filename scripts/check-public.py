@@ -65,6 +65,12 @@ for record in json.loads((ROOT / 'app/assets/fonts/SOURCES.json').read_text()):
     if Path(record['file']).suffix.lower() in font_suffixes:
         public_fonts['app/assets/fonts/' + record['file']] = record['sha256']
 
+# Standby map fonts (Space Grotesk, Material Symbols subset) with their own source record.
+standby_fonts = ROOT / 'app/standby/fonts/SOURCES.json'
+for record in json.loads(standby_fonts.read_text()) if standby_fonts.is_file() else []:
+    if Path(record['file']).suffix.lower() in font_suffixes:
+        public_fonts['app/standby/fonts/' + record['file']] = record['sha256']
+
 for name in sorted(candidates):
     if forbidden(name):
         findings.append('Private/generated source path: ' + name)
@@ -121,7 +127,9 @@ for path in private_fonts:
     if git('hash-object', str(path)).decode().strip() in object_ids:
         findings.append('Known proprietary font bytes in Git history: ' + path.name)
 
-for name in ['app/assets/fonts/geist/OFL.txt', 'app/assets/fonts/newsreader/OFL.txt', 'app/assets/manrope-OFL.txt']:
+for name in ['app/assets/fonts/geist/OFL.txt', 'app/assets/fonts/newsreader/OFL.txt', 'app/assets/manrope-OFL.txt'] + (
+        ['app/standby/fonts/OFL-SpaceGrotesk.txt', 'app/standby/fonts/Apache-2.0-MaterialSymbols.txt', 'app/standby/vendor/LICENSE.txt']
+        if (ROOT / 'app/standby').is_dir() else []):
     if not (ROOT / name).is_file():
         findings.append('Missing public font licence: ' + name)
 

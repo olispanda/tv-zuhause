@@ -1,0 +1,32 @@
+[
+  {
+    "family": "Space Grotesk",
+    "file": "space-grotesk-latin.woff2",
+    "licence": "OFL-1.1",
+    "licence_file": "OFL-SpaceGrotesk.txt",
+    "source": "Google Fonts CSS API (fonts.googleapis.com/css2 → fonts.gstatic.com); exact request URL not recorded",
+    "bytes": 22320,
+    "sha256": "a0d054c4af557de20afd6ca59f47ab353bcaec49c63ff04b6c9d39d0f8910557",
+    "note": "Google Fonts 'latin' subset of the variable font (wght 300–700); unicode-range in fonts.css matches that subset."
+  },
+  {
+    "family": "Space Grotesk",
+    "file": "space-grotesk-latin-ext.woff2",
+    "licence": "OFL-1.1",
+    "licence_file": "OFL-SpaceGrotesk.txt",
+    "source": "Google Fonts CSS API (fonts.googleapis.com/css2 → fonts.gstatic.com); exact request URL not recorded",
+    "bytes": 18924,
+    "sha256": "054c266fbb441ee059365dba0885d206f67ca05b375de869b88e02ebfccc9b9d",
+    "note": "Google Fonts 'latin-ext' subset of the variable font (wght 300–700)."
+  },
+  {
+    "family": "Material Symbols Rounded",
+    "file": "material-symbols-rounded-subset.woff2",
+    "licence": "Apache-2.0",
+    "licence_file": "Apache-2.0-MaterialSymbols.txt",
+    "source": "Google Fonts CSS API (fonts.googleapis.com/css2 → fonts.gstatic.com); exact request URL not recorded; upstream project https://github.com/google/material-design-icons",
+    "bytes": 1712,
+    "sha256": "1f28b59daab17476a66f020db9b41421eb989c3d1489a04066c0f6cf5e78fa90",
+    "note": "Subset containing only the glyphs flight, home and train (text= request), weight 500."
+  }
+]
