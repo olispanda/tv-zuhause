@@ -153,7 +153,7 @@
     var planes = Planes.positions(now);
     map.getSource('trains').setData({ type: 'FeatureCollection', features: trains.map(function (t) { return feature(t.p, { label: t.label, kind: t.kind, special: !!t.special, named: !!t.rareName, tunnel: t.tunnel, bearing: t.bearing || 0 }); }) });
     map.getSource('planes').setData({ type: 'FeatureCollection', features: planes.map(function (a) {
-      return feature(a.p, { callsign: a.typeCode || a.callsign, alt: typeof a.altM === 'number' ? fmtInt(a.altM) + ' m' : '', track: a.track, over: a.over, ground: !!a.ground }); }) });
+      return feature(a.p, { callsign: a.type || a.callsign, alt: typeof a.altM === 'number' ? fmtInt(a.altM) + ' m' : '', track: a.track, over: a.over, ground: !!a.ground }); }) });
     if (now - trailsAt > 1000) { trailsAt = now; map.getSource('trails').setData({ type: 'FeatureCollection', features: planes.filter(function (a) { return a.trail.length > 1; }).map(function (a) {
       return { type: 'Feature', geometry: { type: 'LineString', coordinates: a.trail }, properties: {} }; }) }); }   // trails change slowly
     last = { trains: trains, planes: planes };
