@@ -633,3 +633,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000}
 .l-list .quiet-utils.is-text .u-content>*+*{margin-left:0;margin-right:0}
 .quiet-utils.is-text .u-content>*+*{margin-left:0}
 .l-list .quiet-utils.is-text .u .u-content>*+*{margin-right:0}
+/* Standby (picture.js): live Zürich HB map or a full-screen picture after remote inactivity. */
+.picture{position:absolute;left:0;top:0;width:1920px;height:1080px;z-index:50;background:#000;opacity:0;visibility:hidden;pointer-events:none;transition-property:opacity,visibility;transition-timing-function:ease}
+.picture.is-shown{opacity:1;visibility:visible;pointer-events:auto}
+.picture img{display:block;width:100%;height:100%;object-fit:cover}
+.picture iframe{display:block;width:1920px;height:1080px;border:0;pointer-events:none;background:#1c1930}

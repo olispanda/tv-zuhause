@@ -1,5 +1,5 @@
 // Development only: check ES5 grammar and common runtime mistakes.
-export default [{
+export default [{ ignores: ['app/standby/vendor/**'] }, {
   files: ['app/**/*.js'],
   languageOptions: {
     ecmaVersion: 5,
@@ -27,5 +27,15 @@ export default [{
     'no-unexpected-multiline': 'error',
     'valid-typeof': 'error',
     eqeqeq: ['error', 'always']
+  }
+}, {
+  // Zürich HB standby map (app/standby): browser APIs and its own script globals.
+  files: ['app/standby/js/**/*.js'],
+  languageOptions: {
+    globals: {
+      fetch: 'readonly', setInterval: 'readonly', clearInterval: 'readonly', location: 'readonly', Path2D: 'readonly',
+      Float64Array: 'readonly', Int32Array: 'readonly', maplibregl: 'readonly',
+      HBConfig: 'readonly', HBMapStyle: 'readonly', Rails: 'readonly', Trains: 'readonly', Planes: 'readonly', TrainIcons: 'readonly'
+    }
   }
 }];

@@ -43,3 +43,7 @@ PP*.woff2
 /explorations/
 /docs/research/
 /docs/articles/
+
+# Standby map build tools (Mac only)
+/standby/tools/node_modules/
+/app/standby/js/local-config.js

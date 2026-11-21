@@ -1,0 +1,3 @@
+{ "name": "standby-tools", "private": true, "type": "module",
+  "description": "Build-time helpers for the Zürich HB standby map (not shipped to the TV).",
+  "devDependencies": { "@mapbox/vector-tile": "2.0.4", "pbf": "4.0.1" } }

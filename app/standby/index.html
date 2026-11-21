@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zürich HB Live</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="vendor/maplibre-gl.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="stage" id="stage">
+  <div class="map" id="map"></div>
+
+  <header class="corner">
+    <div class="clock" id="clock" aria-label="Uhrzeit"></div>
+    <div class="live" id="liveChip"><span class="dot"></span><span id="liveText">Verbinde …</span></div>
+  </header>
+
+  <div class="events" id="events" aria-live="polite"></div>
+
+  <section class="tile tile-legend" id="legend"></section>
+  <div class="attribution">Karte © OpenFreeMap, OpenMapTiles, OpenStreetMap · Relief © Mapzen · Fahrplan transport.opendata.ch · Flugdaten adsb.lol</div>
+</main>
+
+<script src="vendor/maplibre-gl.js"></script>
+<script src="js/local-config.js"></script>
+<script src="js/config.js"></script>
+<script src="js/mapstyle.js"></script>
+<script src="js/rails.js"></script>
+<script src="js/trains.js"></script>
+<script src="js/planes.js"></script>
+<script src="js/trainicon.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

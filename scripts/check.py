@@ -29,6 +29,8 @@ for filename in ['index.html']:
         if filename.endswith('.js'):
             assert reference.startswith(('./', '../')), 'Module imports must be relative paths'
 for css in app.rglob('*.css'):
+    if 'vendor' in css.relative_to(app).parts:   # third-party, shipped unchanged (e.g. MapLibre in app/standby/vendor)
+        continue
     source = re.sub(r'/\*.*?\*/', '', css.read_text(), flags=re.S)
     assert not re.search(r'(?:^|[;{}])\s*inset\s*:', source, re.I), 'Use explicit edges for Chromium 85: ' + str(css.relative_to(app))
     assert not re.search(r'(?:^|[;{}])\s*(?:row-|column-)?gap\s*:', source, re.I), 'Use child margins for older flex engines: ' + str(css.relative_to(app))
