@@ -1,6 +1,8 @@
 /* Public Tizen application APIs. No Mac server, network address or credentials. */
 (function () {
   'use strict';
+  var INPUT_NAMES = { /* HDMI-Portnummer: Name, z.B. 2: 'Nintendo Switch' */ };
+  function inputName(n) { return INPUT_NAMES[n] ? INPUT_NAMES[n] : 'HDMI ' + n; }
   var IDS = {
     stremio: 'IkWsFHtOY9.Stremio', netflix: 'org.tizen.netflix-app',
     disneyplus: 'MCmYXNxgcu.DisneyPlus', youtube: '9Ur5IzDKqV.TizenYouTube',
@@ -33,7 +35,7 @@
     done({ message: 'Open CleanFrame on the TV to use this control.', detail: 'The web preview cannot control the TV.' });
   }
   function failure(err) {
-    return { message: 'The TV could not open this screen.', detail: err && (err.message || err.name) || 'Try again, or press the remote’s Home button to return to CleanFrame.' };
+    return { message: 'The TV could not open this screen.', detail: err && (err.message || err.name) || 'Try again, or press the remoteâ€™s Home button to return to CleanFrame.' };
   }
   function bounded(done, timeout) {
     var finished = false, timer = setTimeout(function () { finish({ message: 'The TV did not respond. Please try again.' }); }, timeout || 8000);
@@ -54,7 +56,7 @@
           if (!src || src.type !== 'HDMI' || typeof src.number !== 'number' || !isFinite(src.number) || src.number < 0 || Math.floor(src.number) !== src.number) return;
           var key = String(src.number), item = byPort[key];
           if (!item) {
-            item = { number: src.number, name: 'HDMI ' + src.number, connected: false, active: !!(active && active.type === 'HDMI' && active.number === src.number), source: src };
+            item = { number: src.number, name: inputName(src.number), connected: false, active: !!(active && active.type === 'HDMI' && active.number === src.number), source: src };
             byPort[key] = item; list.push(item);
           }
           if (connected) { item.connected = true; item.source = src; }
@@ -92,7 +94,7 @@
           if (selected && (selected.type !== 'HDMI' || selected.number !== port)) { finish({ message: 'The TV selected a different input. Please try again.' }); return; }
           try {
             app.launch('org.tizen.tv-viewer', function () { finish(null, input); }, function () {
-              finish({ message: 'The input was selected, but the TV viewer could not open.', detail: 'Use the remote’s Source control to view the input.' });
+              finish({ message: 'The input was selected, but the TV viewer could not open.', detail: 'Use the remoteâ€™s Source control to view the input.' });
             });
           } catch (error) { finish({ message: 'The input was selected, but the TV viewer could not open.' }); }
         }, function (error) { if (!finished) finish(failure(error)); });
