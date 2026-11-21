@@ -1,23 +1,23 @@
-/* Standby: after a period without remote input on the visible launcher, show the live Zürich HB map
-   (standby/index.html) full-screen – or a single picture in 'picture' mode. Any key or click hides it again
+/* Standby: after a period without remote input on the visible launcher, show the live ZÃ¼rich HB map
+   (standby/index.html) full-screen â€“ or a single picture in 'picture' mode. Any key or click hides it again
    and is not passed to the launcher. The map is created on show and removed on hide, so it uses no network
    or CPU while the launcher is in use. Runs only while CleanFrame is visible; it cannot show anything in TV standby. */
 (function () {
   'use strict';
 
   var CONFIG = {
-    mode: 'map',                                      // 'map' (live Zürich HB map) or 'picture'
+    mode: 'map',                                      // 'map' (live ZÃ¼rich HB map) or 'picture'
     idleMinutes: 5,                                   // minutes without a key press before standby starts
     map: 'standby/index.html',
     src: 'assets/picture/bild.jpg',                   // picture mode: own image (1920x1080 or 3840x2160)
     fallback: 'assets/wallpapers/alpine.jpg',         // picture mode: if bild.jpg is missing
-    fadeMs: 1200
+    fadeMs: 1200, maxMinutes: 120
   };
   var QA = window.ShoreQA = window.ShoreQA || {};
   var minuteMs = QA.minuteMs || 60000;
 
   var layer = document.createElement('div'), content = null;
-  var timer = 0, shown = false;
+  var timer = 0, maxTimer = 0, shown = false;
   layer.id = 'picture';
   layer.className = 'picture';
   layer.setAttribute('aria-hidden', 'true');
@@ -52,11 +52,13 @@
     layer.appendChild(content);
     layer.className = 'picture is-shown';
     screenSaver(false);
+    clearTimeout(maxTimer); maxTimer = setTimeout(hide, CONFIG.maxMinutes * minuteMs);
   }
   function hide() {
     if (!shown) return;
     shown = false;
     layer.className = 'picture';
+    clearTimeout(maxTimer); maxTimer = 0;
     screenSaver(true);
     var old = content;
     content = null;
