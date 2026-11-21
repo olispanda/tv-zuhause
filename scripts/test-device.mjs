@@ -76,6 +76,23 @@ test('regional streaming apps stay distinct and system helpers stay hidden', () 
   assert.equal(apps.find(a => a.name === 'HBO Max').brand, 'hbomax');
 });
 
+test('advertising, promotion and Samsung service apps stay hidden', () => {
+  const h = harness();
+  let apps;
+  h.device.apps((error, value) => { assert.equal(error, null); apps = value; });
+  h.requests[0].ok([
+    { id: 'Promo12345.TVPlus', name: 'Samsung TV Plus', show: true },
+    { id: 'Gaming1234.Hub', name: 'Gaming Hub', show: true },
+    { id: 'Health1234.App', name: 'Samsung Health', show: true },
+    { id: 'Shopx12345.Shop', name: 'Samsung Shop', show: true },
+    { id: 'Rakuten123.TV', name: 'Rakuten TV', show: true },
+    { id: 'Guide12345.Universal', name: 'Universal Guide', show: true },
+    { id: 'Zattoo1234.Zattoo', name: 'Zattoo', show: true },
+    { id: 'MCmYXNxgcu.DisneyPlus', name: 'Disney+', show: true }
+  ]);
+  assert.deepEqual(Array.from(apps, a => a.name).sort(), ['Disney+', 'Zattoo']);
+});
+
 test('launch keeps its eight-second deadline independently of discovery', () => {
   const h = harness(), results = [];
   h.device.launchApp('Synthetic.App', error => results.push(error));

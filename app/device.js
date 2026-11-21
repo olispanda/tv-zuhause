@@ -20,6 +20,9 @@
   var INTERNAL = ['adplatform.ADPlayer', 'WykOS4t4F0.cmsWebApp', '25emanual3.emanual',
     'd0m1lV1nt2.emanual', '2022ePop01.SmartTV',
     'ZODRT12q2l.WebAccountExtension', 'ByJlgt0XeD.CastSettingsApp', 'tv6pbVMQFF.PrivacyChoices'];
+  // Pre-installed advertising, shopping and promotion apps and Samsung service clusters (free ad-TV channels,
+  // Gaming Hub, Health, Daily+, store/shop tiles, guides). Matched on name and ID; Home apps are never hidden.
+  var PROMO = /(?:\bads?\b|adplayer|advert|sponsor|promo|samsung tv plus|tv ?plus|gaming hub|game ?hub|samsung health|daily ?\+|samsung daily|universal guide|\bshop\b|shopping|store|deals|offers?\b|rakuten|pluto|\bfast\b|free ?tv|samsung kids|samsung education|workout|fitness|\bbixby\b|\balexa\b|smartthings|art store|ambient|tips|e-?manual|user guide)/i;
   var SELF = 'nClrkHome1.FrameHome';
   function api() { return window.tizen && window.tizen.application; }
   function selfId() {
@@ -131,6 +134,7 @@
           if (a.id === self || INTERNAL.indexOf(a.id) >= 0 || seen[a.id] || !a.name || (!primary && !stream && (!a.show || !consumer))) return;
           if (!primary && /(?:service|worker|preview|promotion|plugin|launcher|test|sdk|^ep[ -]|factory|daemon)/i.test(a.name + ' ' + a.id)) return;
           if (/-dummy$/.test(a.id) || a.id === 'com.samsung.tv.cobalt-yt') return;
+          if (!primary && PROMO.test(a.name + ' ' + a.id)) return;
           seen[a.id] = true;
           result.push({ appId: a.id, name: a.name, brand: known[a.id] || EXTRA_BRANDS[a.id] || '', icon: a.iconPath || '', rank: primary ? Object.keys(IDS).indexOf(known[a.id]) : (stream ? 20 : 30) });
         });
