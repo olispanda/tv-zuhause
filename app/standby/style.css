@@ -25,7 +25,7 @@ body { font-family: var(--ui-font, 'Space Grotesk'), system-ui, sans-serif; colo
    (they pass over it). The HTML clock keeps its space so the live chip stays in place. */
 .stage.clock-in-map::before { display: none; }
 .stage.clock-in-map .clock { visibility: hidden; }
-.live { display: flex; align-items: center; margin-top: 16px; font-size: 18px; font-weight: 500; color: var(--on-surface-var); }
+.live { display: flex; align-items: center; margin-top: -10px; font-size: 18px; font-weight: 500; color: var(--on-surface-var); }
 .live .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); margin-right: 10px; animation: live 2.4s ease-out infinite; }
 .live.is-warn .dot { background: var(--plane); animation: none; }
 .live.is-quiet .dot { background: var(--on-surface-var); animation: none; }
@@ -87,6 +87,7 @@ body { font-family: var(--ui-font, 'Space Grotesk'), system-ui, sans-serif; colo
 .tile-iss .air-body, .tile-iss .air-body strong { color: #fff; }
 .tile-iss .flight-sub, .tile-iss .fact span { color: #c9d3ff; opacity: 1; }
 .iss-icon { width: 30px; height: 30px; fill: #c9d3ff; }
+.heli-icon { width: 30px; height: 30px; fill: currentColor; }
 @keyframes iss-glow { 0%, 100% { box-shadow: 0 0 0 1px rgba(150, 175, 255, 0.25), 0 0 24px rgba(110, 140, 255, 0.3), 0 8px 28px rgba(0, 0, 0, 0.4); }
   50% { box-shadow: 0 0 0 1px rgba(150, 175, 255, 0.5), 0 0 44px rgba(110, 140, 255, 0.6), 0 8px 28px rgba(0, 0, 0, 0.4); } }
 .rare-row.is-iss { align-items: center; margin: 2px -8px 6px; padding: 5px 8px; border-radius: 10px;

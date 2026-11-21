@@ -94,7 +94,7 @@ window.Planes = (function () {
       var lon = p.lon + d * Math.sin(rad) / (111320 * Math.cos(p.lat * Math.PI / 180)), lat = p.lat + d * Math.cos(rad) / 111320;
       var km = Rails.dist([lon, lat], (C.home || HB).p) / 1000;
       return { hex: p.hex, callsign: p.callsign, airline: p.airline, type: p.type, typeCode: p.typeCode, reg: p.reg, altM: p.altM, climb: p.climb, kmh: p.kmh,
-        track: p.track, p: [lon, lat], km: km, ground: p.ground, over: (p.wasOver = !p.ground && km <= C.overflightKm + (p.wasOver ? 0.8 : 0)), rare: rareReason(p), trail: p.trail.concat([[lon, lat]]) };
+        track: p.track, p: [lon, lat], km: km, ground: p.ground, heli: !!p.heli, over: (p.wasOver = !p.ground && km <= C.overflightKm + (p.wasOver ? 0.8 : 0)), rare: rareReason(p), trail: p.trail.concat([[lon, lat]]) };
     });
   }
 

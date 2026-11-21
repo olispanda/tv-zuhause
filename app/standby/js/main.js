@@ -54,17 +54,22 @@
   window.HBMap = map;
 
   /* ---------- Map layers for live data ---------- */
-  function planeIcon() {
+  var PLANE_PATH = 'M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z';
+  // Helicopter seen from above, nose up: crossed main rotor, cabin, tail boom and tail rotor.
+  var HELI_PATH = ['M3.76 2.18 4.68 1.26 20.24 16.82 19.32 17.74z', 'M19.32 1.26 20.24 2.18 4.68 17.74 3.76 16.82z',
+    'M8.8 9.8a3.2 4.6 0 1 0 6.4 0a3.2 4.6 0 1 0-6.4 0z', 'M11.3 13.5h1.4V21h-1.4z', 'M9.6 19.6h4.8V21H9.6z'];
+  function mapIcon(path) {
     var s = 64, c = document.createElement('canvas'); c.width = c.height = s;
     var g = c.getContext('2d'); g.translate(s / 2, s / 2); g.scale(s / 26, s / 26); g.translate(-12, -12);
-    g.fillStyle = '#fff'; g.fill(new Path2D('M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z'));
+    g.fillStyle = '#fff'; [].concat(path).forEach(function (d) { g.fill(new Path2D(d)); });   // parts filled one by one so overlaps don't cut holes
     return g.getImageData(0, 0, s, s);
   }
   var empty = { type: 'FeatureCollection', features: [] };
   function kindColor() { return ['case', ['get', 'named'], COL.special, ['match', ['get', 'kind'], 'sbahn', COL.sbahn, 'long', COL.long, COL.regio]]; }
 
   map.on('load', function () {
-    map.addImage('plane', planeIcon(), { sdf: true, pixelRatio: 2 });
+    map.addImage('plane', mapIcon(PLANE_PATH), { sdf: true, pixelRatio: 2 });
+    map.addImage('heli', mapIcon(HELI_PATH), { sdf: true, pixelRatio: 2 });
     map.addSource('trails', { type: 'geojson', data: empty });
     map.addSource('trains', { type: 'geojson', data: empty });
     map.addSource('planes', { type: 'geojson', data: empty });
@@ -90,7 +95,7 @@
     map.addLayer({ id: 'plane-trail', type: 'line', source: 'trails', layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': COL.plane, 'line-width': 2, 'line-opacity': 0.35 } });
     map.addLayer({ id: 'plane', type: 'symbol', source: 'planes', layout: {
-      'icon-image': 'plane', 'icon-size': ['case', ['get', 'over'], 1.25, ['get', 'ground'], 0.55, 0.9], 'symbol-sort-key': ['case', ['get', 'ground'], 0, 1], 'icon-rotate': ['get', 'track'], 'icon-rotation-alignment': 'map',
+      'icon-image': ['case', ['get', 'heli'], 'heli', 'plane'], 'icon-size': ['case', ['get', 'over'], 1.25, ['get', 'ground'], 0.55, 0.9], 'symbol-sort-key': ['case', ['get', 'ground'], 0, 1], 'icon-rotate': ['get', 'track'], 'icon-rotation-alignment': 'map',
       'icon-allow-overlap': true, 'icon-ignore-placement': true,
       'text-field': ['case', ['get', 'ground'], '', ['concat', ['get', 'callsign'], '\n', ['get', 'alt']]], 'text-font': ['Noto Sans Bold'], 'text-size': 13, 'text-line-height': 1.15,
       'text-anchor': 'left', 'text-offset': [1.4, 0], 'text-optional': true },
@@ -200,7 +205,7 @@
     var planes = Planes.positions(now);
     map.getSource('trains').setData({ type: 'FeatureCollection', features: trains.map(function (t) { return feature(t.p, { label: t.label, kind: t.kind, special: !!t.special, named: !!t.rareName, tunnel: t.tunnel, bearing: t.bearing || 0 }); }) });
     map.getSource('planes').setData({ type: 'FeatureCollection', features: planes.map(function (a) {
-      return feature(a.p, { callsign: a.type || a.callsign, alt: typeof a.altM === 'number' ? fmtInt(a.altM) + ' m' : '', track: a.track, over: a.over, ground: !!a.ground }); }) });
+      return feature(a.p, { callsign: a.type || a.callsign, alt: typeof a.altM === 'number' ? fmtInt(a.altM) + ' m' : '', track: a.track, over: a.over, ground: !!a.ground, heli: !!a.heli }); }) });
     if (now - trailsAt > 1000) { trailsAt = now; map.getSource('trails').setData({ type: 'FeatureCollection', features: planes.filter(function (a) { return a.trail.length > 1; }).map(function (a) {
       return { type: 'Feature', geometry: { type: 'LineString', coordinates: a.trail }, properties: {} }; }) }); }   // trails change slowly
     last = { trains: trains, planes: planes };
@@ -276,7 +281,7 @@
     }
     planes.forEach(function (a) {
       if (!a.over && !(a.rare && inView(a.p))) return;
-      cards.push({ key: 'p' + a.hex, color: COL.plane, icon: 'flight', title: a.over ? 'Überflug Zuhause' + (a.rare ? ' · ' + a.rare : '') : a.rare, big: a.type || a.callsign,
+      cards.push({ key: 'p' + a.hex, color: COL.plane, icon: 'flight', iconHtml: a.heli ? HELI_ICON : '', title: a.over ? 'Überflug Zuhause' + (a.rare ? ' · ' + a.rare : '') : a.rare, big: a.type || a.callsign,
         sub: [a.airline, a.callsign].filter(Boolean).join(' · ') || a.reg,
         facts: fact(typeof a.altM === 'number' ? fmtInt(a.altM) : '–', 'Meter' + (a.climb > 300 ? ' ↗' : a.climb < -300 ? ' ↘' : '')) + fact(a.kmh || '–', 'km/h') + fact(a.km.toFixed(1), 'km von zuhause') });
     });
@@ -298,6 +303,7 @@
   var LOG_KEY = 'hb.rareLog', rareLog = loadLog(), logHtml = null, logSaved = 0;
   function loadLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY)) || {}; } catch (e) { return {}; } }
   function saveLog() { try { localStorage.setItem(LOG_KEY, JSON.stringify(rareLog)); } catch (e) { /* storage unavailable */ } }
+  var HELI_ICON = '<svg class="air-icon heli-icon" viewBox="0 0 24 24" aria-hidden="true">' + HELI_PATH.map(function (d) { return '<path d="' + d + '"/>'; }).join('') + '</svg>';
   var ISS_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 9h4v6h-4zM11.25 3h1.5v18h-1.5zM1 7h7v4H1zM1 13h7v4H1zM16 7h7v4h-7zM16 13h7v4h-7zM8 11.25h8v1.5H8z"/></svg>';
   function logRare(planes, iss, nowMs) {
     var R = C.rare || {}, keepMs = (R.logHours || 24) * 3600000, changed = false;
