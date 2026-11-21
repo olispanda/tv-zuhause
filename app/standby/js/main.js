@@ -265,7 +265,7 @@
 
     var ts = Trains.status(), ps = Planes.status(), chip = $('liveChip');
     chip.className = 'live' + (ts.quiet ? ' is-quiet' : ts.error || ps.error ? ' is-warn' : '');
-    $('liveText').textContent = ts.quiet ? 'Betriebspause' : ts.error ? 'Fahrplan: keine Verbindung' : ps.error ? 'Flugdaten: keine Verbindung'
+    $('liveText').textContent = ts.quiet ? 'Betriebspause' : ts.error ? 'Fahrplan: keine Verbindung' : ps.paused ? 'Flugdaten pausiert' : ps.error ? 'Flugdaten: keine Verbindung'
       : ts.lastUpdate ? 'Live' : 'Verbinde …';
 
     // Overview cards for rare events: aircraft over home, rare aircraft or rare trains in view.

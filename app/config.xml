@@ -7,7 +7,7 @@
   <icon src="icon.png"/>
   <feature name="http://tizen.org/feature/screen.size.normal.1080.1920"/>
   <tizen:profile name="tv-samsung"/>
-  <!-- Standby map: live data (transport.opendata.ch, adsb.lol) and map tiles (OpenFreeMap, terrain) over the internet. -->
+  <!-- Standby map: live data (transport.opendata.ch, adsb.fi, adsb.lol) and map tiles (OpenFreeMap, terrain) over the internet. -->
   <access origin="*" subdomains="true"/>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/application.launch"/>

@@ -1,15 +1,16 @@
-"""Browser preview for the standby map: serves app/standby/ and proxies adsb.lol (which sends no CORS headers).
+"""Browser preview for the standby map: serves app/standby/ and proxies adsb.fi and adsb.lol (neither sends CORS headers).
 
 Usage: python3 tools/serve.py  ->  http://127.0.0.1:8791/
 """
 import http.server
 import pathlib
 import socketserver
+import urllib.error
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[2] / 'app' / 'standby'   # the map lives inside the CleanFrame app
 PORT = 8791
-PROXIES = {'/proxy/adsb/': 'https://api.adsb.lol/'}
+PROXIES = {'/proxy/adsbfi/': 'https://opendata.adsb.fi/api/', '/proxy/adsb/': 'https://api.adsb.lol/'}
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -33,6 +34,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+        except urllib.error.HTTPError as err:  # pass the status and rate-limit hints on, so the page can pause that source
+            self.send_response(err.code)
+            for name in ('Retry-After', 'X-RateLimit-Reset', 'X-RateLimit-Remaining'):
+                if err.headers.get(name):
+                    self.send_header(name, err.headers[name])
+            self.send_header('Content-Length', '0')
+            self.end_headers()
         except Exception as err:  # upstream down or slow: report, the page keeps running
             self.send_error(502, str(err))
 

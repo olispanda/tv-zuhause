@@ -1,4 +1,4 @@
-/* Live aircraft around Zürich HB from adsb.lol (ADS-B, free, no key). */
+/* Live aircraft around Zürich HB from adsb.fi, falling back to adsb.lol (ADS-B, free, no key). */
 window.Planes = (function () {
   'use strict';
   var C = window.HBConfig, HB = C.hb;
@@ -45,11 +45,45 @@ window.Planes = (function () {
     BE40: 'Beechjet 400', GLID: 'Segelflugzeug', BALL: 'Ballon'
   };
 
+  /* Sources from config: each remembers when it was last asked and until when it is paused. */
+  var sources = (C.adsbSources || []).map(function (s) { return { name: s.name, api: s.api, minPollSec: s.minPollSec || 0, pauseSec: s.pauseSec || 300, last: 0, pausedUntil: 0 }; });
+  var source = null;
+
+  function allPaused() {
+    var now = Date.now();
+    return sources.length > 0 && sources.every(function (x) { return now < x.pausedUntil; });
+  }
+
+  /* Seconds until the rate limit resets, from the response headers (null if unknown). */
+  function resetSec(r) {
+    var v = parseInt(r.headers.get('x-ratelimit-reset') || r.headers.get('retry-after') || '', 10);
+    return v > 0 ? Math.min(v, 86400) : null;
+  }
+
+  function pick(now) {
+    for (var i = 0; i < sources.length; i++) {
+      var s = sources[i];
+      if (now < s.pausedUntil) continue;
+      return now - s.last >= s.minPollSec * 1000 ? s : null;   // not due yet: wait for it instead of falling through
+    }
+    return null;
+  }
+
   function poll() {
-    var url = C.adsbApi + '/v2/lat/' + HB.p[1] + '/lon/' + HB.p[0] + '/dist/' + C.planeRadiusNm;
-    return fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (d) {
+    var s = pick(Date.now());
+    if (!s) return;
+    s.last = Date.now();
+    var url = s.api + '/v2/lat/' + HB.p[1] + '/lon/' + HB.p[0] + '/dist/' + C.planeRadiusNm;
+    return fetch(url).then(function (r) {
+      if (!r.ok) {
+        s.pausedUntil = Date.now() + ((r.status === 429 && resetSec(r)) || s.pauseSec) * 1000;
+        throw new Error(s.name + ': HTTP ' + r.status);
+      }
+      return r.json();
+    }, function (err) { s.pausedUntil = Date.now() + 60000; throw err; }).then(function (d) {
       var now = Date.now();
-      (d.ac || []).forEach(function (a) {
+      source = s.name;
+      (d.ac || d.aircraft || []).forEach(function (a) {   // adsb.lol: ac, adsb.fi: aircraft (same readsb fields)
         if (typeof a.lat !== 'number' || typeof a.lon !== 'number') return;   // aircraft on the ground (taxiing, at the gate) are kept and drawn small
         var cs = (a.flight || '').trim(), p = planes[a.hex] || (planes[a.hex] = { hex: a.hex, trail: [] });
         p.callsign = cs || a.r || a.hex.toUpperCase();
@@ -98,5 +132,5 @@ window.Planes = (function () {
     });
   }
 
-  return { start: start, positions: positions, status: function () { return { lastUpdate: lastUpdate, error: lastError }; } };
+  return { start: start, positions: positions, status: function () { return { lastUpdate: lastUpdate, error: lastError, paused: allPaused(), source: source }; } };
 })();

@@ -35,8 +35,16 @@ window.HBConfig = {
   ],
   quietHours: { from: '01:30', to: '05:00' },   // no train polling during the night break
 
-  // Live aircraft: adsb.lol (free, no key). The browser preview goes through the local proxy (tools/serve.py).
-  adsbApi: location.protocol === 'http:' && /^(localhost|127\.0\.0\.1)/.test(location.hostname) ? '/proxy/adsb' : 'https://api.adsb.lol',
+  // Live aircraft (ADS-B, free, no key), tried in order. A source that answers 429 or fails is paused
+  // (until its rate-limit reset, else pauseSec) and the next one is used. minPollSec keeps a source inside its quota:
+  // adsb.fi allows about 1 request/second; adsb.lol only 500 per day and IP, so it is a slow fallback.
+  // The browser preview goes through the local proxy (standby/tools/serve.py), as neither sends CORS headers.
+  adsbSources: (function (local) {
+    return [
+      { name: 'adsb.fi', api: local ? '/proxy/adsbfi' : 'https://opendata.adsb.fi/api', minPollSec: 0, pauseSec: 300 },
+      { name: 'adsb.lol', api: local ? '/proxy/adsb' : 'https://api.adsb.lol', minPollSec: 180, pauseSec: 900 }
+    ];
+  })(location.protocol === 'http:' && /^(localhost|127\.0\.0\.1)/.test(location.hostname)),
   planePollSec: 10,
   planeRadiusNm: 12,
   overflightKm: 2.5,       // 'Überflug Zuhause' if closer than this (horizontal)
