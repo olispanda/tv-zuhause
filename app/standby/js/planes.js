@@ -19,7 +19,30 @@ window.Planes = (function () {
     B77W: 'Boeing 777-300ER', B772: 'Boeing 777-200', B789: 'Boeing 787-9', B788: 'Boeing 787-8', B38M: 'Boeing 737 MAX 8',
     B738: 'Boeing 737-800', B763: 'Boeing 767-300', E190: 'Embraer E190', E195: 'Embraer E195', E295: 'Embraer E195-E2',
     E290: 'Embraer E190-E2', DH8D: 'Dash 8-400', AT76: 'ATR 72-600', CRJ9: 'CRJ-900', PC12: 'Pilatus PC-12', PC24: 'Pilatus PC-24',
-    EC35: 'Airbus H135', EC45: 'Airbus H145', H145: 'Airbus H145', A139: 'AW139', C172: 'Cessna 172'
+    EC35: 'Airbus H135', EC45: 'Airbus H145', H145: 'Airbus H145', A139: 'AW139', C172: 'Cessna 172',
+    A318: 'Airbus A318', A332: 'Airbus A330-200', A339: 'Airbus A330-900', A346: 'Airbus A340-600', A35K: 'Airbus A350-1000',
+    A310: 'Airbus A310', B737: 'Boeing 737-700', B739: 'Boeing 737-900', B39M: 'Boeing 737 MAX 9', B3XM: 'Boeing 737 MAX 10',
+    B744: 'Boeing 747-400', B748: 'Boeing 747-8', B752: 'Boeing 757-200', B764: 'Boeing 767-400', B77L: 'Boeing 777-200LR',
+    B778: 'Boeing 777-8', B779: 'Boeing 777-9', B78X: 'Boeing 787-10', E170: 'Embraer E170', E175: 'Embraer E175',
+    E75L: 'Embraer E175', E145: 'Embraer ERJ-145', E35L: 'Embraer Legacy 600', E55P: 'Embraer Phenom 300', E50P: 'Embraer Phenom 100',
+    CRJ7: 'CRJ-700', CRJX: 'CRJ-1000', AT72: 'ATR 72', AT75: 'ATR 72-500', AT45: 'ATR 42-500', AT46: 'ATR 42-600',
+    DH8C: 'Dash 8-300', SB20: 'Saab 2000', SF34: 'Saab 340', F100: 'Fokker 100', BA46: 'BAe 146', RJ85: 'Avro RJ85',
+    RJ1H: 'Avro RJ100', SU95: 'Sukhoi Superjet 100', C25A: 'Cessna Citation CJ2', C25B: 'Cessna Citation CJ3',
+    C25C: 'Cessna Citation CJ4', C525: 'Cessna CitationJet', C56X: 'Cessna Citation Excel', C68A: 'Cessna Citation Latitude',
+    C700: 'Cessna Citation Longitude', C510: 'Cessna Citation Mustang', C182: 'Cessna 182', C152: 'Cessna 152', C208: 'Cessna Caravan',
+    GLF4: 'Gulfstream IV', GLF5: 'Gulfstream V', GLF6: 'Gulfstream G650', GA6C: 'Gulfstream G600', GLEX: 'Bombardier Global Express',
+    GL5T: 'Bombardier Global 5000', GL7T: 'Bombardier Global 7500', CL35: 'Bombardier Challenger 350', CL60: 'Bombardier Challenger 600',
+    LJ45: 'Learjet 45', LJ75: 'Learjet 75', F2TH: 'Dassault Falcon 2000', FA7X: 'Dassault Falcon 7X', FA8X: 'Dassault Falcon 8X',
+    F900: 'Dassault Falcon 900', FA50: 'Dassault Falcon 50', PRM1: 'Beechcraft Premier', BE20: 'Beechcraft King Air 200',
+    B350: 'Beechcraft King Air 350', BE9L: 'Beechcraft King Air 90', BE36: 'Beechcraft Bonanza', HDJT: 'HondaJet',
+    SR22: 'Cirrus SR22', SR20: 'Cirrus SR20', SF50: 'Cirrus Vision Jet', P28A: 'Piper PA-28', PA46: 'Piper Malibu',
+    DA40: 'Diamond DA40', DA42: 'Diamond DA42', DA62: 'Diamond DA62', TBM9: 'Daher TBM 900', TBM8: 'Daher TBM 850',
+    PC6T: 'Pilatus PC-6', PC7: 'Pilatus PC-7', PC9: 'Pilatus PC-9', PC21: 'Pilatus PC-21', C130: 'Lockheed C-130 Hercules',
+    C30J: 'Lockheed C-130J', A400: 'Airbus A400M', F18: 'F/A-18 Hornet', F35: 'F-35 Lightning II', TIGR: 'F-5 Tiger',
+    EC30: 'Airbus H130', EC20: 'Airbus H120', EC55: 'Airbus H155', EC75: 'Airbus H175', AS50: 'Airbus H125 Écureuil',
+    AS32: 'Super Puma', AS3B: 'Super Puma', EC25: 'Airbus H225', A109: 'AW109', A169: 'AW169', B06: 'Bell 206',
+    B407: 'Bell 407', B429: 'Bell 429', R44: 'Robinson R44', R22: 'Robinson R22', R66: 'Robinson R66', K126: 'Kamov',
+    BE40: 'Beechjet 400', GLID: 'Segelflugzeug', BALL: 'Ballon'
   };
 
   function poll() {
@@ -34,6 +57,7 @@ window.Planes = (function () {
         p.type = TYPES[a.t] || a.t || '';
         p.typeCode = a.t || '';
         p.military = !!(a.dbFlags & 1);
+        p.flagged = !!(a.dbFlags & 2);   // adsb.lol "interesting": curated list, mostly government/VIP aircraft
         p.heli = a.category === 'A7' || /^(EC|H1|A1[0-9]{2}|AS3|R44|R22|B06|B407|B429)/.test(a.t || '');
         p.reg = a.r || '';
         p.ground = a.alt_baro === 'ground';
@@ -54,7 +78,9 @@ window.Planes = (function () {
 
   /* Why an aircraft counts as rare ('' if it doesn't). */
   function rareReason(p) {
-    var R = C.rare || {};
+    var R = C.rare || {}, cs = (p.callsign || '').toUpperCase();
+    var state = (R.stateCallsigns || []).some(function (pre) { return cs.indexOf(pre) === 0; });
+    if (state || (R.stateFlagged && p.flagged)) return 'Staatsflug';
     if (R.military && p.military) return 'Militär';
     if ((R.aircraftTypes || []).indexOf(p.typeCode) >= 0) return 'Seltener Flugzeugtyp';
     if (R.helicopters && p.heli) return 'Helikopter';
@@ -67,7 +93,7 @@ window.Planes = (function () {
       var p = planes[k], dt = Math.min(20, Math.max(0, (nowMs - p.t) / 1000)), d = p.speed * dt, rad = p.track * Math.PI / 180;
       var lon = p.lon + d * Math.sin(rad) / (111320 * Math.cos(p.lat * Math.PI / 180)), lat = p.lat + d * Math.cos(rad) / 111320;
       var km = Rails.dist([lon, lat], (C.home || HB).p) / 1000;
-      return { hex: p.hex, callsign: p.callsign, airline: p.airline, type: p.type, reg: p.reg, altM: p.altM, climb: p.climb, kmh: p.kmh,
+      return { hex: p.hex, callsign: p.callsign, airline: p.airline, type: p.type, typeCode: p.typeCode, reg: p.reg, altM: p.altM, climb: p.climb, kmh: p.kmh,
         track: p.track, p: [lon, lat], km: km, ground: p.ground, over: (p.wasOver = !p.ground && km <= C.overflightKm + (p.wasOver ? 0.8 : 0)), rare: rareReason(p), trail: p.trail.concat([[lon, lat]]) };
     });
   }

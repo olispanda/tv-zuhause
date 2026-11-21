@@ -4,6 +4,8 @@ window.HBConfig = {
   // Fixed camera: zoom 11.5 with HB at this stage pixel covers that area on the full 1920×1080 screen.
   view: { zoom: 11.5, hbAt: [1010, 610] },
   hb: { id: '8503000', name: 'Zürich HB', p: [8.540212, 47.378176] },
+  // Flughafen Zürich: marker at the terminal (Airside Center), same white style as HB and Zuhause.
+  airport: { name: 'Flughafen', p: [8.5617, 47.4504] },
   // Zuhause: private, comes from js/local-config.js (not in Git – see local-config.example.js).
   // Aircraft overflights are measured from here; without it, from Zürich HB and no home marker is drawn.
   home: (window.HBLocalConfig && window.HBLocalConfig.home) || null,
@@ -68,11 +70,52 @@ window.HBConfig = {
     trainCategories: [],     // no whole categories – only the highlight list above counts as rare
     aircraftTypes: ['A388', 'B744', 'B748', 'B74F', 'A124', 'A225', 'C17', 'A400', 'C130', 'C30J', 'BLCF', 'A3ST', 'CONC', 'DC3', 'JU52'],
     helicopters: true,       // e.g. Rega, police
-    military: true           // ADS-B military flag
+    military: true,          // ADS-B military flag
+    // State/government flights: callsign prefixes of air forces' VIP squadrons and government fleets.
+    stateCallsigns: ['SUI',            // Schweizer Luftwaffe / Lufttransportdienst des Bundes
+      'GAF', 'GNY',                    // Deutschland: Luftwaffe (Flugbereitschaft), Marine
+      'CTM', 'FAF', 'FNY',             // Frankreich: COTAM, Armée de l'air, Marine
+      'IAM', 'AME', 'BAF', 'NAF',      // Italien, Spanien, Belgien, Niederlande
+      'RRR', 'KRF', 'HAF', 'PLF',      // UK: RAF, Royal Flight; Griechenland; Polen
+      'SAM', 'RCH', 'CFC', 'ASY',      // USA: Special Air Mission, Reach; Kanada; Australien
+      'NATO', 'UNO'],
+    stateFlagged: true,      // adsb.lol "interesting" flag (curated government/VIP aircraft)
+    // Small list top right: state flights and military aircraft seen in the map during the last logHours.
+    logReasons: ['Staatsflug', 'Militär'],
+    logHours: 24
   },
 
-  // Accent colours: cool mint/turquoise contrast on the indigo base; rare highlights in warm cream.
-  colors: {
-    sbahn: '#5cf2b4', long: '#26d9e6', regio: '#1fb8a6', home: '#9067c6', plane: '#c8fff0', special: '#f7ece1', hb: '#ffffff'
+  // ISS passes over home (wheretheiss.at, free, no key). Counted when it rises above minElevation degrees;
+  // shown as a special card while overhead and kept in the list top right for rare.logHours.
+  iss: { api: 'https://api.wheretheiss.at/v1/satellites/25544', minElevation: 25, pollSec: 30 },
+
+  // Two dark themes, switched by the sun at home: 'day' while the sun is above dayFromSun degrees
+  // (-6 = civil dusk), 'night' otherwise. Preview one in the browser with ?theme=day or ?theme=night.
+  dayFromSun: -6,
+  themes: {
+    // Nacht – Graphit & Gold: anthracite map, golden rails; trains gold/amber/champagne, aircraft ivory.
+    night: {
+      map: { bg: '#121315', residential: '#17181b', wood: '#141517', grass: '#16171a', park: '#1b1c1f', water: '#1f2226', waterLine: '#2c3036',
+        building: '#1e1f23', minor: '#222327', street: '#2b2c30', main: '#3a3b40', motorway: '#55565c',
+        rail: '#c9a24a', railTunnel: '#5a4c2e', railGlow: '#ffd98a', aeroArea: '#1e1f23', taxiway: '#2a2b2f', runway: '#3a3b40',
+        shadow: '#050506', highlight: '#2a2b30', accent: '#0c0c0e' },
+      colors: { sbahn: '#f2c14e', long: '#ff9b3d', regio: '#e8d6a0', home: '#c9a24a', plane: '#f4f1ea', special: '#fff3c4', hb: '#ffffff' },
+      halo: '#121315',
+      ui: { '--bg': '#121315', '--surface': '#1c1d21', '--surface-high': '#2a2b30', '--outline': 'rgba(242, 193, 78, 0.16)',
+        '--on-surface': '#f4efe3', '--on-surface-var': '#b3a989', '--ok': '#f2c14e', '--home': '#c9a24a', '--ink': '#121315',
+        '--wash': '18, 19, 21', '--log-bg': 'rgba(28, 29, 33, 0.85)', '--attr': 'rgba(179, 169, 137, 0.5)' }
+    },
+    // Tag – Petrol & Koralle: deep-sea petrol map, turquoise rails; trains coral/raspberry/peach, aircraft sun-yellow.
+    day: {
+      map: { bg: '#0d2027', residential: '#11272f', wood: '#0f242b', grass: '#10262d', park: '#143039', water: '#1a4450', waterLine: '#24596a',
+        building: '#163039', minor: '#19343d', street: '#1d4149', main: '#265460', motorway: '#336b77',
+        rail: '#7fd1c7', railTunnel: '#2f5f66', railGlow: '#b8fff4', aeroArea: '#163039', taxiway: '#1d414b', runway: '#2a5662',
+        shadow: '#04121a', highlight: '#1f4652', accent: '#0a1a20' },
+      colors: { sbahn: '#ff8a6b', long: '#ff5c7a', regio: '#ffc08a', home: '#7fd1c7', plane: '#ffe78a', special: '#ffd6e0', hb: '#ffffff' },
+      halo: '#0d2027',
+      ui: { '--bg': '#0d2027', '--surface': '#132c34', '--surface-high': '#1c3d47', '--outline': 'rgba(127, 209, 199, 0.18)',
+        '--on-surface': '#e9f6f3', '--on-surface-var': '#8fb8b4', '--ok': '#7fd1c7', '--home': '#7fd1c7', '--ink': '#0d2027',
+        '--wash': '13, 32, 39', '--log-bg': 'rgba(19, 44, 52, 0.85)', '--attr': 'rgba(143, 184, 180, 0.5)' }
+    }
   }
 };

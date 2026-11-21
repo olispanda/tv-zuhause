@@ -1,9 +1,31 @@
 /* Zürich HB Live – map setup, animation loop and tiles. */
 (function () {
   'use strict';
-  var C = window.HBConfig, HB = C.hb, COL = C.colors;
+  var C = window.HBConfig, HB = C.hb, COL;
   var stage = document.getElementById('stage'), $ = function (id) { return document.getElementById(id); };
   var TZ = 'Europe/Zurich', last = { trains: [], planes: [] };
+
+  /* ---------- Theme: 'day' / 'night' by the sun at home (?theme=day|night forces one) ---------- */
+  function sunElevation(date, lon, lat) {   // degrees; NOAA low-precision formula, plenty for a day/night switch
+    var d = date.getTime() / 86400000 - 10957.5, g = (357.529 + 0.98560028 * d) * Math.PI / 180, q = 280.459 + 0.98564736 * d;
+    var L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * Math.PI / 180, e = (23.439 - 0.00000036 * d) * Math.PI / 180;
+    var ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), dec = Math.asin(Math.sin(e) * Math.sin(L));
+    var gmst = (18.697374558 + 24.06570982441908 * d) % 24, ha = ((gmst * 15 + lon) * Math.PI / 180) - ra, la = lat * Math.PI / 180;
+    return Math.asin(Math.sin(la) * Math.sin(dec) + Math.cos(la) * Math.cos(dec) * Math.cos(ha)) * 180 / Math.PI;
+  }
+  var forced = (/[?&]theme=(day|night)/.exec(location.search) || [])[1], themeName = null, theme;
+  function pickTheme() {
+    var h = (C.home || HB).p;
+    return forced || (sunElevation(new Date(), h[0], h[1]) > (C.dayFromSun === undefined ? -6 : C.dayFromSun) ? 'day' : 'night');
+  }
+  function useTheme(name) {
+    themeName = name; theme = C.themes[name]; COL = C.colors = theme.colors;
+    var root = document.documentElement;
+    Object.keys(theme.ui).forEach(function (k) { root.style.setProperty(k, theme.ui[k]); });
+    Object.keys(COL).forEach(function (k) { root.style.setProperty('--' + k, COL[k]); });
+    root.setAttribute('data-theme', name);
+  }
+  useTheme(pickTheme());
 
   /* UI font: config.font, or ?font=Family for comparing in the browser preview. */
   (function () {
@@ -23,7 +45,7 @@
   window.addEventListener('resize', fit); fit();
 
   var map = new maplibregl.Map({
-    container: 'map', style: HBMapStyle(C), interactive: false, attributionControl: false, fadeDuration: 0,
+    container: 'map', style: HBMapStyle(C, theme.map), interactive: false, attributionControl: false, fadeDuration: 0,
     center: HB.p, zoom: C.view.zoom
   });
   // Shift the camera so HB sits at view.hbAt instead of the screen centre.
@@ -38,7 +60,7 @@
     return g.getImageData(0, 0, s, s);
   }
   var empty = { type: 'FeatureCollection', features: [] };
-  var kindColor = ['case', ['get', 'named'], COL.special, ['match', ['get', 'kind'], 'sbahn', COL.sbahn, 'long', COL.long, COL.regio]];
+  function kindColor() { return ['case', ['get', 'named'], COL.special, ['match', ['get', 'kind'], 'sbahn', COL.sbahn, 'long', COL.long, COL.regio]]; }
 
   map.on('load', function () {
     map.addImage('plane', planeIcon(), { sdf: true, pixelRatio: 2 });
@@ -48,21 +70,21 @@
 
     TrainIcons.add(map);
     map.addLayer({ id: 'train-glow', type: 'circle', source: 'trains', filter: ['==', ['get', 'tunnel'], 0],
-      paint: { 'circle-radius': ['case', ['get', 'special'], 34, 15], 'circle-color': kindColor, 'circle-opacity': ['case', ['get', 'special'], 0.4, 0.14], 'circle-blur': 0.7 } });
+      paint: { 'circle-radius': ['case', ['get', 'special'], 34, 15], 'circle-color': kindColor(), 'circle-opacity': ['case', ['get', 'special'], 0.4, 0.14], 'circle-blur': 0.7 } });
     map.addLayer({ id: 'train-icon', type: 'symbol', source: 'trains', layout: {
       'icon-image': ['concat', ['case', ['any', ['get', 'special'], ['==', ['get', 'kind'], 'long']], 'train-long', 'train-short'], ['case', ['==', ['get', 'tunnel'], 1], '-tunnel', '']],
       'icon-size': ['case', ['get', 'special'], 1.3, 0.85], 'symbol-sort-key': ['case', ['get', 'special'], 1, 0], 'icon-rotate': ['get', 'bearing'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map',
       'icon-allow-overlap': true, 'icon-ignore-placement': true },
-      paint: { 'icon-color': kindColor, 'icon-halo-color': '#1c1930', 'icon-halo-width': ['case', ['==', ['get', 'tunnel'], 1], 0.8, 1.6], 'icon-halo-blur': 0.3,
+      paint: { 'icon-color': kindColor(), 'icon-halo-color': theme.halo, 'icon-halo-width': ['case', ['==', ['get', 'tunnel'], 1], 0.8, 1.6], 'icon-halo-blur': 0.3,
         'icon-opacity': ['case', ['==', ['get', 'tunnel'], 1], 0.85, 1] } });
     // Highlighted train (e.g. Churchill-Pfeil): always labelled, larger, above everything else.
     map.addLayer({ id: 'train-special-label', type: 'symbol', source: 'trains', filter: ['get', 'special'], layout: {
       'text-field': ['get', 'label'], 'text-font': ['Noto Sans Bold'], 'text-size': 20, 'text-anchor': 'left', 'text-offset': [1.6, 0],
-      'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': kindColor, 'text-halo-color': '#1c1930', 'text-halo-width': 2 } });
+      'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': kindColor(), 'text-halo-color': theme.halo, 'text-halo-width': 2 } });
     map.addLayer({ id: 'train-label', type: 'symbol', source: 'trains', filter: ['!', ['get', 'special']], layout: {
       'text-field': ['get', 'label'], 'text-font': ['Noto Sans Bold'], 'text-size': 14,
       'text-variable-anchor': ['left', 'right', 'top', 'bottom'], 'text-radial-offset': 1.3,
-      'text-optional': true, 'text-padding': 3 }, paint: { 'text-color': kindColor, 'text-halo-color': '#1c1930', 'text-halo-width': 1.6 } });
+      'text-optional': true, 'text-padding': 3 }, paint: { 'text-color': kindColor(), 'text-halo-color': theme.halo, 'text-halo-width': 1.6 } });
     map.addLayer({ id: 'plane-trail', type: 'line', source: 'trails', layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': COL.plane, 'line-width': 2, 'line-opacity': 0.35 } });
     map.addLayer({ id: 'plane', type: 'symbol', source: 'planes', layout: {
@@ -70,7 +92,7 @@
       'icon-allow-overlap': true, 'icon-ignore-placement': true,
       'text-field': ['case', ['get', 'ground'], '', ['concat', ['get', 'callsign'], '\n', ['get', 'alt']]], 'text-font': ['Noto Sans Bold'], 'text-size': 13, 'text-line-height': 1.15,
       'text-anchor': 'left', 'text-offset': [1.4, 0], 'text-optional': true },
-      paint: { 'icon-color': COL.plane, 'icon-opacity': ['case', ['get', 'ground'], 0.55, 1], 'icon-halo-color': '#1c1930', 'icon-halo-width': 1.5, 'text-color': COL.plane, 'text-halo-color': '#1c1930', 'text-halo-width': 1.6 } });
+      paint: { 'icon-color': COL.plane, 'icon-opacity': ['case', ['get', 'ground'], 0.55, 1], 'icon-halo-color': theme.halo, 'icon-halo-width': 1.5, 'text-color': COL.plane, 'text-halo-color': theme.halo, 'text-halo-width': 1.6 } });
 
     var el = document.createElement('div');
     el.className = 'hb-marker';
@@ -79,15 +101,38 @@
 
     // Zuhause – the most important point on the map; aircraft overflights are measured from here.
     if (C.home) addHome();
+    if (C.airport) addPlace(C.airport, 'flight');
 
-    Rails.load('data/rails.json').then(function () { Trains.start(); Planes.start(); frame(); setInterval(ui, 1000); ui(); });
+    Rails.load('data/rails.json').then(function () { Trains.start(); Planes.start(); ISS.start(); frame(); setInterval(ui, 1000); ui(); });
   });
-  function addHome() {
-    var home = document.createElement('div');
-    home.className = 'hb-marker home-marker';   // same white style as the HB marker
-    home.innerHTML = '<div class="pulse"></div><div class="ring"></div><div class="name"><span class="material-symbols-rounded" aria-hidden="true">home</span>' + C.home.name + '</div>';
-    new maplibregl.Marker({ element: home, anchor: 'center' }).setLngLat(C.home.p).addTo(map);
+  function addHome() { addPlace(C.home, 'home'); }
+  // A named place with a Material Symbols glyph (home, flight) – same white ring + name pill as the HB marker.
+  function addPlace(place, icon) {
+    var el = document.createElement('div');
+    el.className = 'hb-marker home-marker';
+    el.innerHTML = '<div class="pulse"></div><div class="ring"></div><div class="name"><span class="material-symbols-rounded" aria-hidden="true">' + icon + '</span>' + place.name + '</div>';
+    new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(place.p).addTo(map);
   }
+
+  /* Switch theme live: repaint the base map (fades via the style transition), live layers, UI and cards. */
+  function switchTheme(name) {
+    useTheme(name);
+    HBMapStyle(C, theme.map).layers.forEach(function (l) {
+      Object.keys(l.paint || {}).forEach(function (k) { map.setPaintProperty(l.id, k, l.paint[k]); });
+    });
+    var kc = kindColor();
+    map.setPaintProperty('train-glow', 'circle-color', kc);
+    ['train-icon', 'train-special-label', 'train-label'].forEach(function (id) {
+      map.setPaintProperty(id, id === 'train-icon' ? 'icon-color' : 'text-color', kc);
+      map.setPaintProperty(id, id === 'train-icon' ? 'icon-halo-color' : 'text-halo-color', theme.halo);
+    });
+    map.setPaintProperty('plane-trail', 'line-color', COL.plane);
+    ['icon-color', 'text-color'].forEach(function (k) { map.setPaintProperty('plane', k, COL.plane); });
+    ['icon-halo-color', 'text-halo-color'].forEach(function (k) { map.setPaintProperty('plane', k, theme.halo); });
+    Object.keys(cardEls).forEach(function (k) { cardEls[k].parentNode.removeChild(cardEls[k]); delete cardEls[k]; delete cardSeen[k]; });   // rebuilt in the new colours
+  }
+  setInterval(function () { var n = pickTheme(); if (n !== themeName && map.isStyleLoaded()) switchTheme(n); }, 60000);
+  window.HBTheme = function (name) { forced = name; switchTheme(name); };   // console helper for the preview
 
   /* ---------- Animation ---------- */
   function feature(p, props) { return { type: 'Feature', geometry: { type: 'Point', coordinates: p }, properties: props }; }
@@ -120,32 +165,43 @@
   function hhmm(sec) { return new Date(sec * 1000).toLocaleTimeString('de-CH', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }); }
   function inView(p) { var b = map.getBounds(); return p[0] > b.getWest() && p[0] < b.getEast() && p[1] > b.getSouth() && p[1] < b.getNorth(); }
   /* Keyed card list: new cards slide in once, existing ones only update their content. */
-  var cardEls = {}, cardSeen = {}, LINGER_MS = 30000;
+  // A card stays at most MAX_CARD_MS from its first appearance (lingering included); an event that is still
+  // going on after that stays hidden until it has ended, so the same card doesn't pop up again right away.
+  var cardEls = {}, cardSeen = {}, cardFirst = {}, cardDone = {}, LINGER_MS = 30000, MAX_CARD_MS = 60000;
   function renderCards(cards) {
     var box = $('events'), keep = {}, now = Date.now(), live = {};
     cards.forEach(function (c) { live[c.key] = 1; cardSeen[c.key] = now; });
+    Object.keys(cardDone).forEach(function (k) { if (!live[k]) delete cardDone[k]; });   // event over: may show again next time
     Object.keys(cardEls).forEach(function (k) {   // recently ended events keep their card (in place, unchanged)
       if (!live[k] && now - cardSeen[k] < LINGER_MS) cards.push({ key: k, frozen: true });
+    });
+    cards = cards.filter(function (c) {
+      if (cardDone[c.key]) return false;
+      if (!cardFirst[c.key] || now - cardFirst[c.key] < MAX_CARD_MS) return true;
+      if (live[c.key]) cardDone[c.key] = 1;
+      delete cardFirst[c.key];
+      return false;
     });
     cards = cards.slice(0, 3);
     cards.forEach(function (c, i) {
       keep[c.key] = 1;
+      if (!cardFirst[c.key]) cardFirst[c.key] = now;   // the minute starts when the card is actually on screen
       var el = cardEls[c.key];
       if (!el) {
-        el = cardEls[c.key] = document.createElement('section'); el.className = 'tile tile-air';
-        el.style.background = c.color; el.style.color = ink(c.color);
+        el = cardEls[c.key] = document.createElement('section'); el.className = 'tile tile-air' + (c.cls ? ' ' + c.cls : '');
+        if (c.color) { el.style.background = c.color; el.style.color = ink(c.color); }
       }
       if (c.frozen) { keep[c.key] = 1; if (box.children[i] !== el) box.insertBefore(el, box.children[i] || null); return; }
-      var html = '<header class="tile-head"><span class="material-symbols-rounded air-icon">' + c.icon + '</span><h2>' + esc(c.title) + '</h2></header>' +
+      var html = '<header class="tile-head">' + (c.iconHtml || '<span class="material-symbols-rounded air-icon">' + c.icon + '</span>') + '<h2>' + esc(c.title) + '</h2></header>' +
         '<div class="air-body"><div class="flight">' + esc(c.big) + '</div><div class="flight-sub">' + esc(c.sub) + '</div><div class="facts">' + c.facts + '</div></div>';
       if (el._html !== html) { el._html = html; el.innerHTML = html; }
       if (box.children[i] !== el) box.insertBefore(el, box.children[i] || null);
     });
-    Object.keys(cardEls).forEach(function (k) { if (!keep[k]) { box.removeChild(cardEls[k]); delete cardEls[k]; delete cardSeen[k]; } });
+    Object.keys(cardEls).forEach(function (k) { if (!keep[k]) { box.removeChild(cardEls[k]); delete cardEls[k]; delete cardSeen[k]; delete cardFirst[k]; } });
   }
   function ink(hex) {   // dark text on bright colours, white on deep ones
     var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
-    return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? '#242038' : '#ffffff';
+    return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? theme.ui['--ink'] : '#ffffff';
   }
   function esc(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
@@ -160,8 +216,15 @@
 
     // Overview cards for rare events: aircraft over home, rare aircraft or rare trains in view.
     var planes = last.planes.slice().sort(function (a, b) { return a.km - b.km; }), cards = [], seen = {};
-    var flying = planes.filter(function (a) { return !a.ground && inView(a.p); }).length, parked = planes.filter(function (a) { return a.ground && inView(a.p); }).length;
     function fact(v, unit) { return '<div class="fact"><b>' + esc(v) + '</b><span>' + esc(unit) + '</span></div>'; }
+    // ISS passing over home: always the first card, in its own space style.
+    var iss = ISS.status();
+    if (iss.pass && iss.now) {
+      cards.push({ key: 'iss', cls: 'tile-iss', iconHtml: ISS_ICON.replace('<svg', '<svg class="air-icon iss-icon"'),
+        title: iss.now.visible ? 'ISS über uns · jetzt sichtbar!' : 'ISS über uns', big: 'Internationale Raumstation',
+        sub: 'von ' + iss.pass.from + ' Richtung ' + iss.now.dir + ' · ' + iss.now.altKm + ' km hoch',
+        facts: fact(Math.round(iss.now.el) + '°', 'über Horizont') + fact(iss.now.dir, 'Himmelsrichtung') + fact(fmtInt(iss.now.kmh), 'km/h') });
+    }
     planes.forEach(function (a) {
       if (!a.over && !(a.rare && inView(a.p))) return;
       cards.push({ key: 'p' + a.hex, color: COL.plane, icon: 'flight', title: a.over ? 'Überflug Zuhause' + (a.rare ? ' · ' + a.rare : '') : a.rare, big: a.type || a.callsign,
@@ -177,14 +240,38 @@
         facts: nx ? fact(nx.name, 'nächster Halt') + fact(hhmm(nx.t), 'Uhr') : fact(t.tunnel ? 'im Tunnel' : 'unterwegs', '') });
     });
     renderCards(cards);
+    logRare(planes, iss, now.getTime());
+  }
 
-    var count = { sbahn: 0, long: 0, regio: 0 };
-    last.trains.forEach(function (t) { count[t.kind]++; });
-    $('legend').innerHTML =
-      '<span class="leg">' + TrainIcons.legend(COL.sbahn) + 'S-Bahn<b>' + count.sbahn + '</b></span>' +
-      '<span class="leg">' + TrainIcons.legend(COL.long) + 'Fernverkehr<b>' + count.long + '</b></span>' +
-      '<span class="leg">' + TrainIcons.legend(COL.regio) + 'Regio<b>' + count.regio + '</b></span>' +
-      '<span class="leg">' + TrainIcons.legend('#a3adb8', true) + 'im Tunnel</span>' +
-      '<span class="leg"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>Flugzeuge<b>' + flying + '</b>' + (parked ? '<span class="leg-sub">+ ' + parked + ' am Boden</span>' : '') + '</span>';
+  /* ---------- Rare aircraft log (top right, last 24 h) ---------- */
+  // Very rare aircraft (rare.logReasons: state flights, military) seen flying in the map view are noted
+  // for rare.logHours. Kept in localStorage so a reload/restart of the TV doesn't lose them.
+  var LOG_KEY = 'hb.rareLog', rareLog = loadLog(), logHtml = null, logSaved = 0;
+  function loadLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY)) || {}; } catch (e) { return {}; } }
+  function saveLog() { try { localStorage.setItem(LOG_KEY, JSON.stringify(rareLog)); } catch (e) { /* storage unavailable */ } }
+  var ISS_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 9h4v6h-4zM11.25 3h1.5v18h-1.5zM1 7h7v4H1zM1 13h7v4H1zM16 7h7v4h-7zM16 13h7v4h-7zM8 11.25h8v1.5H8z"/></svg>';
+  function logRare(planes, iss, nowMs) {
+    var R = C.rare || {}, keepMs = (R.logHours || 24) * 3600000, changed = false;
+    // ISS passes (running and finished) – one entry per pass.
+    iss.finished.concat(iss.pass ? [iss.pass] : []).forEach(function (ps) {
+      var k = 'iss-' + ps.start;
+      if (!rareLog[k]) changed = true;
+      rareLog[k] = { iss: true, first: ps.start, t: ps.t, name: 'ISS', maxEl: Math.round(ps.maxEl), visible: ps.visible, over: false };
+    });
+    planes.forEach(function (a) {
+      if (!a.rare || a.ground || !inView(a.p) || (R.logReasons || []).indexOf(a.rare) < 0) return;
+      var e = rareLog[a.hex];
+      if (!e) { e = rareLog[a.hex] = { first: nowMs }; changed = true; }
+      e.name = a.type || a.callsign; e.why = a.rare; e.over = e.over || !!a.over; e.t = nowMs;
+    });
+    Object.keys(rareLog).forEach(function (k) { if (nowMs - rareLog[k].t > keepMs) { delete rareLog[k]; changed = true; } });
+    if (changed || nowMs - logSaved > 60000) { saveLog(); logSaved = nowMs; }
+
+    var rows = Object.keys(rareLog).map(function (k) { return rareLog[k]; }).sort(function (x, y) { return y.t - x.t; }).slice(0, 6);
+    var html = rows.length ? '<h3>Seltenes · letzte ' + (R.logHours || 24) + ' h</h3>' + rows.map(function (e) {
+      if (e.iss) return '<div class="rare-row is-iss">' + ISS_ICON + '<b>ISS</b><span class="why">' + esc('max ' + e.maxEl + '°' + (e.visible ? ' · sichtbar' : '')) + '</span><time>' + hhmm(e.first / 1000) + '</time></div>';
+      return '<div class="rare-row"><b>' + esc(e.name) + '</b><span class="why">' + esc(e.over ? 'Überflug' : e.why) + '</span><time>' + hhmm(e.first / 1000) + '</time></div>';
+    }).join('') : '';
+    if (html !== logHtml) { logHtml = html; var box = $('rareLog'); box.innerHTML = html; box.hidden = !html; }
   }
 })();

@@ -35,7 +35,7 @@ export default [{ ignores: ['app/standby/vendor/**'] }, {
     globals: {
       fetch: 'readonly', setInterval: 'readonly', clearInterval: 'readonly', location: 'readonly', Path2D: 'readonly',
       Float64Array: 'readonly', Int32Array: 'readonly', maplibregl: 'readonly',
-      HBConfig: 'readonly', HBMapStyle: 'readonly', Rails: 'readonly', Trains: 'readonly', Planes: 'readonly', TrainIcons: 'readonly'
+      HBConfig: 'readonly', HBMapStyle: 'readonly', Rails: 'readonly', Trains: 'readonly', Planes: 'readonly', ISS: 'readonly', TrainIcons: 'readonly'
     }
   }
 }];
