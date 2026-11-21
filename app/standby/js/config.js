@@ -93,11 +93,11 @@ window.HBConfig = {
   // (-6 = civil dusk), 'night' otherwise. Preview one in the browser with ?theme=day or ?theme=night.
   dayFromSun: -6,
   themes: {
-    // Nacht – Graphit & Gold: anthracite map, golden rails; trains gold/amber/champagne, aircraft ivory.
+    // Nacht – Graphit & Gold: anthracite map, white rails; trains gold/amber/champagne, aircraft ivory.
     night: {
       map: { bg: '#121315', residential: '#17181b', wood: '#141517', grass: '#16171a', park: '#1b1c1f', water: '#1f2226', waterLine: '#2c3036',
         building: '#1e1f23', minor: '#222327', street: '#2b2c30', main: '#3a3b40', motorway: '#55565c',
-        rail: '#c9a24a', railTunnel: '#5a4c2e', railGlow: '#ffd98a', aeroArea: '#1e1f23', taxiway: '#2a2b2f', runway: '#3a3b40',
+        rail: '#e4e5e8', railTunnel: '#606168', railGlow: '#ffffff', aeroArea: '#1e1f23', taxiway: '#2a2b2f', runway: '#3a3b40',
         shadow: '#050506', highlight: '#2a2b30', accent: '#0c0c0e' },
       colors: { sbahn: '#f2c14e', long: '#ff9b3d', regio: '#e8d6a0', home: '#c9a24a', plane: '#f4f1ea', special: '#fff3c4', hb: '#ffffff' },
       halo: '#121315',
