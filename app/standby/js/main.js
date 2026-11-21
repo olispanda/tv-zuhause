@@ -91,17 +91,28 @@
 
   /* ---------- Animation ---------- */
   function feature(p, props) { return { type: 'Feature', geometry: { type: 'Point', coordinates: p }, properties: props }; }
+  /* Adaptive frame rate: count frames the map actually draws; if it falls clearly short of the target,
+     step down (min C.minFps), and step back up after a calm period. */
+  var perf = window.HBPerf = { target: C.fps, drawn: 0, measured: 0, calm: 0 }, trailsAt = 0;
+  map.on('render', function () { perf.drawn++; });
+  setInterval(function () {
+    perf.measured = perf.drawn / 5; perf.drawn = 0;
+    if (perf.measured < perf.target * 0.7 && perf.target > C.minFps) { perf.target = Math.max(C.minFps, perf.target - 5); perf.calm = 0; }
+    else if (perf.measured >= perf.target * 0.95 && perf.target < C.fps && ++perf.calm >= 6) { perf.target = Math.min(C.fps, perf.target + 5); perf.calm = 0; }
+  }, 5000);
+
   function frame() {
-    var now = Date.now(), b = map.getBounds().toArray(), pad = 0.01;
+    var started = Date.now();
+    var now = started, b = map.getBounds().toArray(), pad = 0.01;
     var trains = Trains.positions(now / 1000).filter(function (t) { return t.p[0] > b[0][0] - pad && t.p[0] < b[1][0] + pad && t.p[1] > b[0][1] - pad && t.p[1] < b[1][1] + pad; });
     var planes = Planes.positions(now);
     map.getSource('trains').setData({ type: 'FeatureCollection', features: trains.map(function (t) { return feature(t.p, { label: t.label, kind: t.kind, special: !!t.special, named: !!t.rareName, tunnel: t.tunnel, bearing: t.bearing || 0 }); }) });
     map.getSource('planes').setData({ type: 'FeatureCollection', features: planes.map(function (a) {
-      return feature(a.p, { callsign: a.type || a.callsign, alt: typeof a.altM === 'number' ? fmtInt(a.altM) + ' m' : '', track: a.track, over: a.over, ground: !!a.ground }); }) });
-    map.getSource('trails').setData({ type: 'FeatureCollection', features: planes.filter(function (a) { return a.trail.length > 1; }).map(function (a) {
-      return { type: 'Feature', geometry: { type: 'LineString', coordinates: a.trail }, properties: {} }; }) });
+      return feature(a.p, { callsign: a.typeCode || a.callsign, alt: typeof a.altM === 'number' ? fmtInt(a.altM) + ' m' : '', track: a.track, over: a.over, ground: !!a.ground }); }) });
+    if (now - trailsAt > 1000) { trailsAt = now; map.getSource('trails').setData({ type: 'FeatureCollection', features: planes.filter(function (a) { return a.trail.length > 1; }).map(function (a) {
+      return { type: 'Feature', geometry: { type: 'LineString', coordinates: a.trail }, properties: {} }; }) }); }   // trails change slowly
     last = { trains: trains, planes: planes };
-    setTimeout(frame, C.frameMs);
+    setTimeout(frame, Math.max(0, 1000 / perf.target - (Date.now() - started)));
   }
 
   /* ---------- Tiles ---------- */

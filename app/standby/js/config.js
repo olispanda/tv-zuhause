@@ -44,7 +44,10 @@ window.HBConfig = {
   glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
   terrain: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
 
-  frameMs: 100,             // map animation step (10 fps keeps the TV cool)
+  // Animation: target frame rate. If the TV can't keep up, the map lowers it by itself (down to minFps)
+  // and raises it again when there is headroom – see the HBPerf readout in the browser console.
+  fps: 25,
+  minFps: 8,
 
   // The only trains that count as rare: highlighted on the map and shown as an overview card.
   // Matched (case-insensitive) against category, train number, line, destination and operator.
