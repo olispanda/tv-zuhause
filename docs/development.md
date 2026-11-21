@@ -10,6 +10,8 @@ Start with Node.js 22.13+ (22 LTS), or 24+, and Python 3.10+, then `npm ci`. The
 
 All UI assets, public fonts and the fifteen wallpapers are bundled. This private build also includes the three locally installed Pangram families through an ignored build overlay; their binaries are not in the public source tree. Glass materials and blurred panel backgrounds are rendered ahead of time; see app/assets/wallpapers/README.md.
 
+The UI kit (icons, M3 tokens, dock sizing, household `local-config.js`) is described in [ui-kit.md](ui-kit.md).
+
 ## Runtime map and compatibility
 
 - `app/index.html` loads the device adapter, gallery/font/palette catalogues, `assets/icons/metrics.js` and `main.js`, with `style.css`.

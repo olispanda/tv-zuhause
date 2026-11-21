@@ -4,7 +4,7 @@ import io
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
-from font_assets import font_overlay
+from font_assets import font_overlay, local_defaults
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -27,6 +27,17 @@ class Preview(SimpleHTTPRequestHandler):
             self.send_header('Content-Length', str(len(content)))
             self.end_headers()
             return io.BytesIO(content)
+        # Household defaults when the ignored file is absent; Tizen resolves $WEBAPIS itself on the TV.
+        name = route[len('/home/'):] if route.startswith('/home/') else ''
+        stub = local_defaults().get(name)
+        if stub is None and name == '$WEBAPIS/webapis/webapis.js':
+            stub = b'/* Browser preview: Samsung webapis exist only on the TV. */\n'
+        if stub is not None:
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/javascript')
+            self.send_header('Content-Length', str(len(stub)))
+            self.end_headers()
+            return io.BytesIO(stub)
         return super().send_head()
 
     def translate_path(self, path):

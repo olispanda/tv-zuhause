@@ -1,141 +1,206 @@
-/* Material 3 layer for CleanFrame. Loaded after style.css; changes colour, shape and focus treatment only –
-   no geometry, so remote focus paths, cached materials and layout checks stay as they are.
-   Colour roles come from the two standby map themes (assets/palette.js switches them by the sun):
-   html.pal-day   = Petrol & Koralle (primary turquoise, tertiary coral)
-   html.pal-night = Graphit & Gold   (primary gold, tertiary amber)
-   M3 shape scale: extra-large 28px (containers), large 16px (cards), full (buttons, chips). */
+/* CleanFrame UI kit – Material 3 layer. Loaded after style.css.
+   It changes colour, shape, elevation and state treatment only. Positions and sizes stay in style.css/main.js,
+   so remote focus paths, cached glass materials and the geometry checks are unaffected.
+   Structure (see docs/ui-kit.md):
+     1. Colour roles     – per palette (html.pal-day / html.pal-night, switched by assets/palette.js)
+     2. System tokens    – M3 shape scale, state layers, elevation, motion
+     3. Component tokens – the knobs to tune: dock, app tile, avatar, controls, lists, cards
+     4. Legacy mapping   – feeds the roles into style.css variables (--ink, --plate, --solid …)
+     5. Components       – Dock, App tile, Avatar, List, Home controls, Buttons, Settings, Cards, Editor, Status */
 
-/* ---------- Colour roles (dark schemes) ---------- */
+/* ======================= 1. Colour roles (dark schemes) ======================= */
+/* Night – Graphit & Gold: primary gold, tertiary amber. */
 html.pal-night{
   --md-surface:#121315;--md-surface-dim:#0e0f11;--md-surface-low:#17181b;--md-surface-container:#1c1d21;--md-surface-high:#24252a;--md-surface-highest:#2e2f35;
   --md-on-surface:#f4efe3;--md-on-surface-var:#c4b996;--md-on-surface-faint:rgba(244,239,227,.56);--md-outline:#8a8170;--md-outline-var:rgba(242,193,78,.18);
   --md-primary:#f2c14e;--md-on-primary:#3d2e00;--md-on-primary-mute:rgba(61,46,0,.72);--md-primary-container:#584400;--md-on-primary-container:#ffe08f;
   --md-secondary-container:#3b3527;--md-on-secondary-container:#efe2c0;--md-tertiary:#ff9b3d;
   --md-error:#ffb4ab;--md-on-error-strong:#8c1d18;
-  --md-scrim:10,10,12;--md-tint:242,193,78
+  --md-scrim:10,10,12;--md-tint:242,193,78;--md-shadow:0,0,0
 }
+/* Day – Petrol & Koralle: primary turquoise, tertiary coral. */
 html.pal-day{
   --md-surface:#0d2027;--md-surface-dim:#091920;--md-surface-low:#11272f;--md-surface-container:#132c34;--md-surface-high:#19363f;--md-surface-highest:#21424c;
   --md-on-surface:#e9f6f3;--md-on-surface-var:#a3c9c4;--md-on-surface-faint:rgba(233,246,243,.56);--md-outline:#6f9692;--md-outline-var:rgba(127,209,199,.2);
   --md-primary:#7fd1c7;--md-on-primary:#00382f;--md-on-primary-mute:rgba(0,56,47,.72);--md-primary-container:#1f5049;--md-on-primary-container:#a9f0e5;
   --md-secondary-container:#1d4149;--md-on-secondary-container:#cde9e4;--md-tertiary:#ff8a6b;
   --md-error:#ffb4ab;--md-on-error-strong:#8c1d18;
-  --md-scrim:4,18,24;--md-tint:127,209,199
+  --md-scrim:4,18,24;--md-tint:127,209,199;--md-shadow:0,6,10
 }
-/* Light background: the light counterpart of the same palette. */
+/* Light background: the light scheme of the same palette. */
 html.pal-night .stage.bg-light{
   --md-surface:#fff8ef;--md-surface-low:#fbf2e4;--md-surface-container:#f5ecdd;--md-surface-high:#efe5d5;--md-surface-highest:#e9dfce;
   --md-on-surface:#1f1b13;--md-on-surface-var:#4d4639;--md-on-surface-faint:rgba(31,27,19,.52);--md-outline:#7f7667;--md-outline-var:rgba(120,90,0,.16);
   --md-primary:#785a00;--md-on-primary:#ffffff;--md-on-primary-mute:rgba(255,255,255,.76);--md-primary-container:#ffdf9e;--md-on-primary-container:#261a00;
-  --md-secondary-container:#f2e1bb;--md-on-secondary-container:#241a04;--md-error:#ba1a1a;--md-on-error-strong:#ffdad6;--md-tint:120,90,0
+  --md-secondary-container:#f2e1bb;--md-on-secondary-container:#241a04;--md-error:#ba1a1a;--md-on-error-strong:#ffdad6;--md-tint:120,90,0;--md-shadow:60,45,0
 }
 html.pal-day .stage.bg-light{
   --md-surface:#f4fbf9;--md-surface-low:#eef5f3;--md-surface-container:#e8efed;--md-surface-high:#e2eae8;--md-surface-highest:#dce4e2;
   --md-on-surface:#161d1c;--md-on-surface-var:#3f4947;--md-on-surface-faint:rgba(22,29,28,.52);--md-outline:#6f7977;--md-outline-var:rgba(0,106,98,.16);
   --md-primary:#006a62;--md-on-primary:#ffffff;--md-on-primary-mute:rgba(255,255,255,.76);--md-primary-container:#9ef2e6;--md-on-primary-container:#00201d;
-  --md-secondary-container:#cce8e3;--md-on-secondary-container:#051f1c;--md-error:#ba1a1a;--md-on-error-strong:#ffdad6;--md-tint:0,106,98
+  --md-secondary-container:#cce8e3;--md-on-secondary-container:#051f1c;--md-error:#ba1a1a;--md-on-error-strong:#ffdad6;--md-tint:0,106,98;--md-shadow:0,40,36
 }
-html.m3 .stage{transition:background-color 4s}
 
-/* ---------- Role mapping onto the existing tokens ---------- */
+/* ======================= 2. System tokens ======================= */
+html.m3{
+  /* Shape scale (M3): none, extra-small … extra-large, full. */
+  --md-shape-xs:4px;--md-shape-sm:8px;--md-shape-md:12px;--md-shape-lg:16px;--md-shape-lg-up:20px;--md-shape-xl:28px;--md-shape-xl-up:32px;--md-shape-full:999px;
+  /* State-layer opacities (M3): hover, focus, pressed, dragged, plus "selected but not focused". */
+  --md-state-hover:.08;--md-state-focus:.10;--md-state-pressed:.10;--md-state-dragged:.16;--md-state-selected:.14;
+  /* Motion (M3): standard and emphasized-decelerate easing. Durations stay with style.css (--t) for the remote paths. */
+  --md-ease-standard:cubic-bezier(.2,0,0,1);--md-ease-decel:cubic-bezier(.05,.7,.1,1);--md-dur-short:150ms;--md-dur-medium:250ms
+}
+html.m3 .stage{
+  /* Elevation (M3 levels 1–3) as fixed shadows; no live blur. */
+  --md-elev-1:0 1px 2px rgba(var(--md-shadow),.30),0 1px 3px 1px rgba(var(--md-shadow),.15);
+  --md-elev-2:0 1px 2px rgba(var(--md-shadow),.30),0 2px 6px 2px rgba(var(--md-shadow),.15);
+  --md-elev-3:0 4px 8px 3px rgba(var(--md-shadow),.15),0 1px 3px rgba(var(--md-shadow),.30);
+  --ease:var(--md-ease-standard);
+  transition:background-color 4s
+}
+
+/* ======================= 3. Component tokens (the UI-kit knobs) ======================= */
+html.m3 .stage{
+  /* Dock container */
+  --dock-shape:var(--md-shape-xl);
+  --dock-container:var(--md-surface-low);                /* flat Light/Dark backgrounds */
+  --dock-photo-veil:rgba(var(--md-scrim),.5);            /* tint over the pre-rendered glass on Photo */
+  --dock-outline:var(--md-outline-var);
+  /* App tile inside the dock (focus plate, labels, marks) */
+  --tile-shape:var(--md-shape-lg-up);
+  --tile-focus-container:var(--md-primary-container);
+  --tile-focus-ink:var(--md-on-primary-container);
+  --tile-focus-ring:inset 0 0 0 3px var(--md-primary);
+  --tile-focus-elevation:var(--md-elev-2);
+  --tile-selected:rgba(var(--md-tint),var(--md-state-selected));  /* focus is up in the controls */
+  --tile-lifted-container:var(--md-secondary-container);           /* Arrange: app picked up */
+  /* Avatar for apps without a bundled mark */
+  --avatar-shape:28%;
+  --avatar-tone:.16;
+  --avatar-tone-focus:.22;
+  /* Home controls (Inputs, All apps, Settings) */
+  --control-focus-container:var(--md-primary-container);
+  --control-focus-ink:var(--md-on-primary-container);
+  /* Lists and cards in panels */
+  --list-shape:var(--md-shape-xl);
+  --list-inner-shape:var(--md-shape-sm);
+  --list-container:var(--md-surface-low);
+  --card-shape:var(--md-shape-xl);
+  --card-container:var(--md-surface-low)
+}
+
+/* ======================= 4. Legacy mapping ======================= */
 /* Commands everywhere: filled primary when focused. */
 html.m3 .stage{--solid:var(--md-primary);--solid-ink:var(--md-on-primary);--solid-mute:var(--md-on-primary-mute);--solid-warn:var(--md-on-error-strong);--warn:var(--md-error)}
 /* Flat backgrounds become the palette surface. */
 html.m3 .stage.bg-dark,html.m3 .stage.bg-light{
   --ground:var(--md-surface);--ink:var(--md-on-surface);--mute:var(--md-on-surface-var);--faint:var(--md-on-surface-faint);--line:var(--md-outline-var);
   --knock:var(--md-surface);--plate:var(--md-surface-highest);--lift:var(--md-secondary-container);--plate-edge:inset 0 0 0 3px var(--md-primary)}
-html.m3 .stage.bg-dark .ph-name,html.m3 .stage.bg-light .ph-name{color:var(--md-on-surface)}
-html.m3 .stage.bg-dark .clock,html.m3 .stage.bg-light .clock{color:var(--md-primary);opacity:1}
-html.m3 .stage.bg-dark .home,html.m3 .stage.bg-light .home{background:radial-gradient(ellipse 1400px 900px at 100% 0,rgba(var(--md-tint),.07),rgba(var(--md-tint),0) 70%)}
-/* Panels (Settings, All apps, editor, messages) are always an opaque M3 surface – no photo behind them. */
+/* Panels (Settings, All apps, editor, messages) are always an opaque surface – no photo behind them. */
 html.m3 .stage .sheet,html.m3 .stage .appearance{
   --ink:var(--md-on-surface);--mute:var(--md-on-surface-var);--faint:var(--md-on-surface-faint);--line:var(--md-outline-var);--knock:var(--md-surface);
   --plate:var(--md-surface-highest);--lift:var(--md-secondary-container);--plate-edge:inset 0 0 0 3px var(--md-primary)}
+
+/* ======================= 5. Components ======================= */
+
+/* ---------- Surfaces and type ---------- */
+html.m3 .stage.bg-dark .ph-name,html.m3 .stage.bg-light .ph-name{color:var(--md-on-surface)}
+html.m3 .stage.bg-dark .clock,html.m3 .stage.bg-light .clock{color:var(--md-primary);opacity:1}
+html.m3 .stage.bg-dark .home,html.m3 .stage.bg-light .home{background:radial-gradient(ellipse 1400px 900px at 100% 0,rgba(var(--md-tint),.07),rgba(var(--md-tint),0) 70%)}
 html.m3 .stage .sheet{background:var(--md-surface)}
 html.m3 .stage .sheet-bg,html.m3 .stage .sheet-veil{display:none}
-html.m3 .stage.at-appearance .scene,html.m3 .stage.at-wallpaper .scene{border-radius:28px;box-shadow:0 0 0 3px var(--md-outline-var),0 12px 40px rgba(0,0,0,.35)}
-
-/* ---------- Typography (M3 type roles on the existing sizes) ---------- */
+html.m3 .stage.at-appearance .scene,html.m3 .stage.at-wallpaper .scene{border-radius:var(--md-shape-xl);box-shadow:0 0 0 3px var(--md-outline-var),var(--md-elev-3)}
+/* Type roles: display/headline titles regular, section labels as label-large in primary. */
 html.m3 .stage .s-title,html.m3 .stage .settings-title{font-weight:400;letter-spacing:-.5px;color:var(--md-on-surface)}
-html.m3 .stage .s-label,html.m3 .stage .eo-sep{font-size:24px;font-weight:600;letter-spacing:.6px;color:var(--md-primary)}
-html.m3 .stage .setting-label{font-size:24px;font-weight:600;letter-spacing:.6px;color:var(--md-primary)}
+html.m3 .stage .s-label,html.m3 .stage .eo-sep,html.m3 .stage .setting-label{font-size:24px;font-weight:600;letter-spacing:.6px;color:var(--md-primary)}
+html.m3 .stage .msg-title{font-weight:400}
 
-/* ---------- Buttons: M3 full-shape, filled primary on focus ---------- */
-html.m3 .stage .btn.is-focus,html.m3 .stage .utils:not(.quiet-utils) .u.is-focus,html.m3 .stage .dock-action.is-focus,html.m3 .stage .ph-action.is-focus,html.m3 .stage .er-rm.is-focus{background:var(--md-primary);color:var(--md-on-primary)}
+/* ---------- Dock (M3 surface container, extra-large shape) ---------- */
+html.m3 .stage .mat,html.m3 .stage .mat::after{border-radius:var(--dock-shape)}
+html.m3 .stage .mat-veil,html.m3 .stage.m-frost .mat-veil,html.m3 .stage.m-tint .mat-veil{background:var(--dock-photo-veil)}
+html.m3 .stage .mat::after{box-shadow:inset 0 0 0 1px var(--dock-outline)}
+html.m3 .stage.bg-dark .dock,html.m3 .stage.bg-light .dock{border-radius:var(--dock-shape);background:var(--dock-container)}
+html.m3 .stage .cue{background:rgba(var(--md-scrim),.55);color:var(--md-primary)}
+
+/* ---------- App tile (M3 card states on the shared focus plate) ---------- */
+html.m3 .stage .plate,html.m3 .stage .tile{border-radius:var(--tile-shape)}
+html.m3 .stage .plate{transition:transform var(--t) var(--ease),opacity var(--md-dur-short) linear,background-color var(--md-dur-short) linear}
+html.m3 .stage .plate.on-focus,html.m3 .stage.m-frost .dock .plate.on-focus,html.m3 .stage.bg-photo.db-quiet.m-frost .dock .plate.on-focus,html.m3 .stage.bg-photo.db-quiet.m-soft .dock .plate.on-focus,html.m3 .stage.bg-photo.db-quiet.m-tint .dock .plate.on-focus{
+  background:var(--tile-focus-container);box-shadow:var(--tile-focus-ring),var(--tile-focus-elevation)}
+html.m3 .stage .plate.on-lift,html.m3 .stage.m-frost .dock .plate.on-lift{background:var(--tile-lifted-container);box-shadow:var(--tile-focus-ring),var(--md-elev-3)}
+html.m3 .stage .plate.on-sel{background:var(--tile-selected)}
+html.m3 .stage.f-glass .dock .tile.is-focus,html.m3 .stage.f-glass .dock .tile.is-lifted{color:var(--tile-focus-ink)}
+html.m3 .stage.f-type .dock .tile.is-focus{color:var(--md-primary)}
+html.m3 .stage .tile.k-add .add{color:var(--md-primary)}
+
+/* ---------- Avatar (apps without a bundled mark) ---------- */
+html.m3 .stage .monogram .avatar{border-radius:var(--avatar-shape)}
+html.m3 .stage .monogram .avatar::before{opacity:var(--avatar-tone)}
+/* On a filled focus container the avatar takes the container ink, like the marks. */
+html.m3 .stage .is-focus .monogram .avatar::before,html.m3 .stage .is-lifted .monogram .avatar::before{opacity:var(--avatar-tone-focus)}
+
+/* ---------- List layout ---------- */
+html.m3 .stage .ph-plate{border-radius:var(--md-shape-full)}
+html.m3 .stage .ph-plate .ph-veil,html.m3 .stage.m-tint .ph-veil,html.m3 .stage.m-frost .ph-veil,html.m3 .stage.bg-photo.l-list.m-frost .ph-veil{background:var(--tile-focus-container);opacity:.9}
+html.m3 .stage .ph-plate.on-lift .ph-veil{background:var(--tile-lifted-container)}
+html.m3 .stage .ph-plate::after,html.m3 .stage.m-tint .ph-plate::after{box-shadow:var(--tile-focus-ring)}
+html.m3 .stage.m-tint .ph-plate::before{display:none}
+html.m3 .stage.m-none .ph-plate{background:var(--tile-focus-container);box-shadow:var(--tile-focus-ring)}
+html.m3 .stage.f-glass .ph-row.is-focus .ph-name,html.m3 .stage .ph-row.is-lifted .ph-name,html.m3 .stage.f-glass .ph-row.is-focus .ph-group,html.m3 .stage .ph-row.is-lifted .ph-group{color:var(--tile-focus-ink);text-shadow:none}
+html.m3 .stage.f-type .ph-row.is-focus .ph-name,html.m3 .stage.f-type .ph-row.is-focus .ph-group{color:var(--md-primary)}
+html.m3 .stage .ph-list.is-compact .ph-row::before{border-radius:var(--md-shape-full)}
+
+/* ---------- Home controls (M3 icon buttons; focused = filled tonal pill) ---------- */
+html.m3 .stage .ut-lens .ph-veil{background:var(--control-focus-container);opacity:.92}
+html.m3 .stage .ut-lens::after{box-shadow:none}
+html.m3 .stage.f-glass .quiet-utils .u.is-focus,html.m3 .stage.f-glass .quiet-utils .u.is-focus .ico{color:var(--control-focus-ink);text-shadow:none}
+html.m3 .stage.f-glass .quiet-utils .u.is-focus .ut-underlay{display:none}
+html.m3 .stage.f-type .quiet-utils .u.is-focus{color:var(--md-primary)}
+
+/* ---------- Buttons (M3 full shape: filled when focused, tonal at rest where they float on Home) ---------- */
+html.m3 .stage .btn,html.m3 .stage .dock-action,html.m3 .stage .ph-action,html.m3 .stage .er-rm{border-radius:var(--md-shape-full)}
+html.m3 .stage .btn.is-focus,html.m3 .stage .utils:not(.quiet-utils) .u.is-focus,html.m3 .stage .dock-action.is-focus,html.m3 .stage .ph-action.is-focus,html.m3 .stage .er-rm.is-focus,
 html.m3 .stage .s-head .btn.is-focus,html.m3 .stage .header-utils .u.is-focus{background:var(--md-primary);color:var(--md-on-primary)}
 html.m3 .stage .s-head .btn.is-focus::before,html.m3 .stage .header-utils .u.is-focus::before{display:none}
 html.m3 .stage .dock-action,html.m3 .stage .ph-action{background:rgba(var(--md-scrim),.28)}
 html.m3 .stage.bg-dark .dock-action,html.m3 .stage.bg-light .dock-action,html.m3 .stage.bg-dark .ph-action,html.m3 .stage.bg-light .ph-action{background:var(--md-secondary-container);color:var(--md-on-secondary-container)}
 html.m3 .stage .remote-key{border-color:var(--md-outline);color:var(--md-on-surface-var)}
 
-/* ---------- Settings: list items on surface containers ---------- */
-html.m3 .stage .settings-group{border-radius:28px;background:var(--md-surface-low)}
+/* ---------- Settings (M3 connected list: large outer corners, small inner corners; focus morphs to full card) ---------- */
+html.m3 .stage .settings-group{border-radius:var(--list-inner-shape);background:var(--list-container);transition:background-color var(--md-dur-short) linear,color var(--md-dur-short) linear,border-radius var(--md-dur-medium) var(--md-ease-standard)}
+html.m3 .stage .settings-group:first-child{border-top-left-radius:var(--list-shape);border-top-right-radius:var(--list-shape)}
+html.m3 .stage .settings-group:last-child{border-bottom-left-radius:var(--list-shape);border-bottom-right-radius:var(--list-shape)}
 html.m3 .stage .settings-group+.settings-group{margin-top:8px}
-html.m3 .stage .settings-group.is-focus{background:var(--md-primary);color:var(--md-on-primary)}
+html.m3 .stage .settings-group.is-focus{border-radius:var(--list-shape);background:var(--md-primary);color:var(--md-on-primary)}
 html.m3 .stage .settings-group.is-focus .settings-group-value,html.m3 .stage .settings-group.is-focus>.ico{color:var(--md-on-primary-mute)}
-html.m3 .stage .setting-choice{border-radius:16px}
-html.m3 .stage .is-horizontal .setting-choice{border-radius:999px;background:var(--md-surface-low)}
+/* Choices: list items (vertical) and segmented chips (horizontal). */
+html.m3 .stage .setting-choice{border-radius:var(--md-shape-lg)}
+html.m3 .stage .is-horizontal .setting-choice{border-radius:var(--md-shape-full);background:var(--list-container)}
 html.m3 .stage .setting-choice.is-focus,html.m3 .stage .is-horizontal .setting-choice.is-focus{background:var(--md-primary);color:var(--md-on-primary)}
 html.m3 .stage .setting-choice.is-focus .setting-description{color:var(--md-on-primary-mute)}
 html.m3 .stage .setting-tick{color:var(--md-primary)}
 html.m3 .stage .setting-choice.is-focus .setting-tick{color:var(--md-on-primary)}
-html.m3 .stage .setting-choice.setting-back{border-radius:999px}
-html.m3 .stage .setting-swatch,html.m3 .stage .wallpaper-thumb{border-radius:12px}
+html.m3 .stage .setting-choice.setting-back{border-radius:var(--md-shape-full)}
+html.m3 .stage .setting-swatch,html.m3 .stage .wallpaper-thumb{border-radius:var(--md-shape-md)}
 html.m3 .stage .swatch-dark{background:var(--md-surface);box-shadow:inset 0 0 0 2px var(--md-outline-var)}
 
-/* ---------- All apps and the Home editor: M3 cards ---------- */
-html.m3 .stage .sheet .gt,html.m3 .stage .sheet .sc{border-radius:28px;background:var(--md-surface-low);box-shadow:none}
-html.m3 .stage .sheet .gt.is-focus,html.m3 .stage .sheet .sc.is-focus{background:var(--md-primary-container);color:var(--md-on-primary-container);box-shadow:inset 0 0 0 3px var(--md-primary)}
-html.m3 .stage .sheet .sc.is-lifted{background:var(--md-secondary-container);box-shadow:inset 0 0 0 3px var(--md-primary)}
-html.m3 .stage .sheet .gt.is-focus .state,html.m3 .stage .sheet .gt.is-focus .badge{color:var(--md-on-primary-container)}
-html.m3 .stage .badge{color:var(--md-primary)}
-html.m3 .stage .verb{color:var(--md-primary)}
-html.m3 .stage .sheet .er-name,html.m3 .stage .sheet .eo,html.m3 .stage .sheet .er-rm{border-radius:999px}
-html.m3 .stage .sheet .er-name.is-focus,html.m3 .stage .sheet .eo.is-focus{background:var(--md-primary-container);color:var(--md-on-primary-container);box-shadow:none}
-html.m3 .stage .sheet .er.is-lifted .er-name{background:var(--md-secondary-container);color:var(--md-on-secondary-container);box-shadow:inset 0 0 0 3px var(--md-primary)}
-html.m3 .stage .sheet .er-name.is-focus .er-num{color:var(--md-on-primary-container)}
-html.m3 .stage .ed-origin{background:var(--md-primary)}
+/* ---------- Cards: All apps grid and Arrange slots ---------- */
+html.m3 .stage .sheet .gt,html.m3 .stage .sheet .sc{border-radius:var(--card-shape);background:var(--card-container);box-shadow:none}
+html.m3 .stage .sheet .gt.is-focus,html.m3 .stage .sheet .sc.is-focus{background:var(--tile-focus-container);color:var(--tile-focus-ink);box-shadow:var(--tile-focus-ring),var(--md-elev-2)}
+html.m3 .stage .sheet .sc.is-lifted{background:var(--tile-lifted-container);box-shadow:var(--tile-focus-ring),var(--md-elev-3)}
+html.m3 .stage .sheet .gt.is-focus .state,html.m3 .stage .sheet .gt.is-focus .badge{color:var(--tile-focus-ink)}
+html.m3 .stage .badge,html.m3 .stage .verb{color:var(--md-primary)}
 /* Type focus keeps its scale-only look but marks the focused item in primary. */
 html.m3 .stage.f-type .sheet .gt,html.m3 .stage.f-type .sheet .sc,html.m3 .stage.f-type .sheet .er-name,html.m3 .stage.f-type .sheet .eo{opacity:1}
 
-/* ---------- Home: Dock ---------- */
-/* The dock is an M3 extra-large container tinted with the palette surface; the focused app is a filled
-   primary-container card with a primary focus ring. */
-html.m3 .stage .mat,html.m3 .stage .mat::after{border-radius:28px}
-html.m3 .stage .mat-veil,html.m3 .stage.m-frost .mat-veil,html.m3 .stage.m-tint .mat-veil{background:rgba(var(--md-scrim),.5)}
-html.m3 .stage .mat::after{box-shadow:inset 0 0 0 1px var(--md-outline-var)}
-html.m3 .stage .plate{border-radius:20px}
-html.m3 .stage .plate.on-focus,html.m3 .stage.m-frost .dock .plate.on-focus,html.m3 .stage.bg-photo.db-quiet.m-frost .dock .plate.on-focus,html.m3 .stage.bg-photo.db-quiet.m-soft .dock .plate.on-focus,html.m3 .stage.bg-photo.db-quiet.m-tint .dock .plate.on-focus{background:var(--md-primary-container);box-shadow:inset 0 0 0 3px var(--md-primary)}
-html.m3 .stage .plate.on-lift,html.m3 .stage.m-frost .dock .plate.on-lift{background:var(--md-secondary-container);box-shadow:inset 0 0 0 3px var(--md-primary)}
-html.m3 .stage .plate.on-sel{background:rgba(var(--md-tint),.12)}
-html.m3 .stage .tile{border-radius:20px}
-html.m3 .stage.f-glass .dock .tile.is-focus,html.m3 .stage.f-glass .dock .tile.is-lifted{color:var(--md-on-primary-container)}
-html.m3 .stage.f-type .dock .tile.is-focus{color:var(--md-primary)}
-html.m3 .stage.bg-dark .dock,html.m3 .stage.bg-light .dock{border-radius:28px;background:var(--md-surface-low)}
+/* ---------- Apps on Home editor (list items) ---------- */
+html.m3 .stage .sheet .er-name,html.m3 .stage .sheet .eo{border-radius:var(--md-shape-full)}
+html.m3 .stage .sheet .er-name.is-focus,html.m3 .stage .sheet .eo.is-focus{background:var(--tile-focus-container);color:var(--tile-focus-ink);box-shadow:none}
+html.m3 .stage .sheet .er.is-lifted .er-name{background:var(--tile-lifted-container);color:var(--md-on-secondary-container);box-shadow:var(--tile-focus-ring)}
+html.m3 .stage .sheet .er-name.is-focus .er-num{color:var(--tile-focus-ink)}
+html.m3 .stage .ed-origin{background:var(--md-primary)}
 
-/* ---------- Home: List ---------- */
-html.m3 .stage .ph-plate{border-radius:999px}
-html.m3 .stage .ph-plate .ph-veil,html.m3 .stage.m-tint .ph-veil,html.m3 .stage.m-frost .ph-veil,html.m3 .stage.bg-photo.l-list.m-frost .ph-veil{background:var(--md-primary-container);opacity:.9}
-html.m3 .stage .ph-plate.on-lift .ph-veil{background:var(--md-secondary-container)}
-html.m3 .stage .ph-plate::after,html.m3 .stage.m-tint .ph-plate::after{box-shadow:inset 0 0 0 3px var(--md-primary)}
-html.m3 .stage.m-tint .ph-plate::before{display:none}
-html.m3 .stage.m-none .ph-plate{background:var(--md-primary-container);box-shadow:inset 0 0 0 3px var(--md-primary)}
-html.m3 .stage.f-glass .ph-row.is-focus .ph-name,html.m3 .stage .ph-row.is-lifted .ph-name{color:var(--md-on-primary-container);text-shadow:none}
-html.m3 .stage.f-glass .ph-row.is-focus .ph-group,html.m3 .stage .ph-row.is-lifted .ph-group{color:var(--md-on-primary-container)}
-html.m3 .stage.f-type .ph-row.is-focus .ph-name,html.m3 .stage.f-type .ph-row.is-focus .ph-group{color:var(--md-primary)}
-html.m3 .stage .ph-list.is-compact .ph-row::before{border-radius:999px}
-
-/* ---------- Home controls (Art Mode, All apps, Settings) ---------- */
-/* The focused control sits on a filled primary-container pill instead of a glass lens. */
-html.m3 .stage .ut-lens .ph-veil{background:var(--md-primary-container);opacity:.92}
-html.m3 .stage .ut-lens::after{box-shadow:none}
-html.m3 .stage.f-glass .quiet-utils .u.is-focus,html.m3 .stage.f-glass .quiet-utils .u.is-focus .ico{color:var(--md-on-primary-container);text-shadow:none}
-html.m3 .stage.f-glass .quiet-utils .u.is-focus .ut-underlay{display:none}
-html.m3 .stage.f-type .quiet-utils .u.is-focus{color:var(--md-primary)}
-html.m3 .stage .cue{background:rgba(var(--md-scrim),.55);color:var(--md-primary)}
-
-/* ---------- Messages and status ---------- */
-html.m3 .stage .msg-title{font-weight:400}
+/* ---------- Status and errors ---------- */
 html.m3 .stage .focus-status{color:var(--md-error)}
 html.m3 .stage .focus-status.dark-ink{color:var(--md-on-error-strong)}
 

@@ -16,5 +16,11 @@
     "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/tubi.svg",
     "licence": "CC0-1.0",
     "note": "Shape unchanged; white fill for launcher."
+  },
+  {
+    "icon": "plex",
+    "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/plex.svg",
+    "licence": "CC0-1.0",
+    "note": "Wordmark, shape unchanged; white fill for launcher. Matched by the exact installed app name."
   }
 ]

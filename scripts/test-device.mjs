@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import test from 'node:test';
 
 const source = readFileSync(new URL('../app/device.js', import.meta.url), 'utf8');
-function harness({ supported = true, throwSource = false } = {}) {
+function harness({ supported = true, throwSource = false, local } = {}) {
   let now = 0, next = 0;
   const timers = new Map(), requests = [], launches = [], sourceRequests = [], changes = [];
   let current = { type: 'HDMI', number: 2 };
@@ -14,7 +14,7 @@ function harness({ supported = true, throwSource = false } = {}) {
     getAppsInfo: (ok, fail) => requests.push({ ok, fail }),
     launch: (id, ok, fail) => launches.push({ id, ok, fail })
   };
-  const window = { tizen: { application } };
+  const window = { tizen: { application }, CleanFrameLocal: local };
   if (supported) {
     window.tizen.systeminfo = { getPropertyValue: (name, ok, fail) => { assert.equal(name, 'VIDEOSOURCE'); sourceRequests.push({ ok, fail }); } };
     window.tizen.tvwindow = { getSource: (...args) => { assert.equal(args.length, 0); return current; },
@@ -74,6 +74,29 @@ test('regional streaming apps stay distinct and system helpers stay hidden', () 
   assert.equal(apps.find(a => a.name === 'YouTube').brand, 'youtube');
   assert.equal(apps.find(a => a.name === 'YouTube TV').brand, '');
   assert.equal(apps.find(a => a.name === 'HBO Max').brand, 'hbomax');
+});
+
+test('Plex gets its bundled mark by exact name, whatever its regional ID', () => {
+  const h = harness();
+  let apps;
+  h.device.apps((error, value) => { apps = value; });
+  h.requests[0].ok([
+    { id: 'kIciSQlYEM.plex', name: 'Plex', show: true },
+    { id: 'Abcde12345.PlexAmp', name: 'Plexamp', show: true }
+  ]);
+  assert.equal(apps.find(a => a.name === 'Plex').brand, 'plex');
+  assert.equal(apps.find(a => a.name === 'Plexamp').brand, '');
+});
+
+test('household config names inputs and maps extra marks without touching tracked source', () => {
+  const h = harness({ local: { inputNames: { 2: 'Nintendo Switch' }, brands: { 'Zz12345678.Zattoo': 'tubi' } } });
+  let apps, inputs;
+  h.device.apps((error, value) => { apps = value; });
+  h.requests[0].ok([{ id: 'Zz12345678.Zattoo', name: 'Zattoo', show: true }]);
+  assert.equal(apps[0].brand, 'tubi');
+  h.device.sources((error, value) => { inputs = value; });
+  h.sourceRequests[0].ok({ connected: [{ type: 'HDMI', number: 2 }], disconnected: [{ type: 'HDMI', number: 1 }] });
+  assert.deepEqual(Array.from(inputs, i => i.name), ['HDMI 1', 'Nintendo Switch']);
 });
 
 test('advertising, promotion and Samsung service apps stay hidden', () => {

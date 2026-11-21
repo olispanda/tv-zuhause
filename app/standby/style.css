@@ -1,96 +1,111 @@
-/* Zürich HB Live – 1920×1080 TV stage, Material 3 inspired tiles on a dark, themed map (day / night). */
+/* Zürich HB Live – standby dashboard on a 1920×1080 TV stage. Material 3 components on a themed map.
+   Structure (same as app/m3.css, see docs/ui-kit.md):
+     1. Colour roles     – set per theme by main.js from config.js themes.<day|night>.ui; night values here as fallback
+     2. System tokens    – M3 shape scale, elevation
+     3. Components       – Clock + status chip, event cards, "Seltenes" list, map markers, attribution
+   Positions are part of the layout contract with main.js (clock drawn into the map at the same place). */
+
+/* ======================= 1. Colour roles ======================= */
 :root {
-  /* Colours come from the active theme (config.js themes.day / themes.night, set by main.js); these are night fallbacks. */
   --bg: #121315; --surface: #1c1d21; --surface-high: #2a2b30; --outline: rgba(242, 193, 78, 0.16);
   --on-surface: #f4efe3; --on-surface-var: #b3a989; --ok: #f2c14e; --home: #c9a24a; --ink: #121315;
   --wash: 18, 19, 21; --log-bg: rgba(28, 29, 33, 0.85); --attr: rgba(179, 169, 137, 0.5);
   --sbahn: #f2c14e; --long: #ff9b3d; --regio: #e8d6a0; --plane: #f4f1ea;
-  --radius-xl: 28px; --radius-l: 16px; --radius-full: 999px;
+
+/* ======================= 2. System tokens ======================= */
+  --shape-sm: 8px; --shape-md: 12px; --shape-lg: 16px; --shape-xl: 28px; --shape-full: 999px;
+  --elev-2: 0 1px 2px rgba(0, 0, 0, 0.30), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --elev-3: 0 4px 8px 3px rgba(0, 0, 0, 0.18), 0 8px 28px rgba(0, 0, 0, 0.28);
+  /* Kept for older references */
+  --radius-xl: var(--shape-xl); --radius-l: var(--shape-lg); --radius-full: var(--shape-full);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
 body { font-family: var(--ui-font, 'Space Grotesk'), system-ui, sans-serif; color: var(--on-surface); -webkit-font-smoothing: antialiased; }
-
 .stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: var(--bg); overflow: hidden; transition: background-color 4s; }
 .map { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
 .maplibregl-ctrl-attrib { display: none; }
+.material-symbols-rounded, .air-icon { font-family: 'Material Symbols Rounded'; line-height: 1; font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24; -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga'; }
 
-/* ---------- Corner clock ---------- */
-/* Soft dark wash behind the top-left corner keeps the clock readable over any part of the map. */
+/* ======================= 3. Components ======================= */
+
+/* ---------- Clock (display-large) and status chip ---------- */
+/* Soft wash behind the corner keeps the clock readable; once the map is ready main.js draws wash and time into
+   the map below trains and aircraft. The HTML clock keeps its space so the chip stays in place. */
 .stage::before { content: ''; position: absolute; left: 0; top: 0; width: 900px; height: 420px; z-index: 1; pointer-events: none;
   background: radial-gradient(ellipse at 0 0, rgba(var(--wash), 0.92) 0%, rgba(var(--wash), 0.6) 40%, rgba(var(--wash), 0) 72%); }
-.corner { position: absolute; left: 48px; top: 36px; z-index: 2; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55); }
-.clock { font-size: 132px; line-height: 128px; font-weight: 700; letter-spacing: -3px; font-variant-numeric: tabular-nums; color: #fff; }
-/* Once the map is ready, main.js draws the wash and the time into the map below trains and aircraft
-   (they pass over it). The HTML clock keeps its space so the live chip stays in place. */
+.corner { position: absolute; left: 48px; top: 36px; z-index: 2; }
+.clock { font-size: 132px; line-height: 128px; font-weight: 700; letter-spacing: -3px; font-variant-numeric: tabular-nums; color: #fff; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55); }
 .stage.clock-in-map::before { display: none; }
 .stage.clock-in-map .clock { visibility: hidden; }
-.live { display: flex; align-items: center; margin-top: -10px; font-size: 18px; font-weight: 500; color: var(--on-surface-var); }
+/* M3 assist chip: pill on a translucent surface, leading status dot. */
+.live { display: inline-flex; align-items: center; height: 36px; margin-top: -4px; padding: 0 16px 0 14px; border-radius: var(--shape-full);
+  background: var(--log-bg); box-shadow: inset 0 0 0 1px var(--outline); font-size: 18px; font-weight: 500; letter-spacing: 0.2px; color: var(--on-surface-var); }
 .live .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); margin-right: 10px; animation: live 2.4s ease-out infinite; }
 .live.is-warn .dot { background: var(--plane); animation: none; }
 .live.is-quiet .dot { background: var(--on-surface-var); animation: none; }
 @keyframes live { 0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); } 70%, 100% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } }
 
-/* ---------- Tiles (overflight cards) ---------- */
-.tile { background: var(--surface); border: 1px solid var(--outline); border-radius: var(--radius-xl); padding: 24px 28px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28); }
-.tile[hidden] { display: none; }
-.tile-head { display: flex; align-items: baseline; margin-bottom: 14px; }
-.tile-head h2 { margin: 0; font-size: 26px; line-height: 32px; font-weight: 600; letter-spacing: 0; }
-
-/* Air tile */
+/* ---------- Event cards (M3 filled cards; main.js may colour them with the map colour of the vehicle) ---------- */
 .events { position: absolute; left: 40px; top: 250px; width: 460px; z-index: 2; }
 .events .tile + .tile { margin-top: 16px; }
-.tile-air { background: var(--plane); color: var(--ink); border-color: transparent; }
-.air-icon { margin-right: 12px; align-self: center; font-family: 'Material Symbols Rounded'; font-size: 30px; line-height: 1; font-variation-settings: 'FILL' 1, 'wght' 500, 'opsz' 24; font-feature-settings: 'liga'; }
-.air-body { font-size: 20px; line-height: 28px; color: var(--on-surface-var); }
-.air-body strong { color: var(--on-surface); font-weight: 500; }
-.tile-air .air-icon { color: inherit; }
-.tile-air .air-body, .tile-air .air-body strong { color: inherit; }
-.flight { font-size: 40px; line-height: 44px; font-weight: 600; letter-spacing: -0.5px; }
-.flight-sub { margin-top: 4px; font-size: 20px; }
-.facts { display: flex; margin-top: 14px; }
-.fact { flex: 1; } .fact + .fact { margin-left: 12px; }
-.fact b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 28px; line-height: 32px; font-weight: 600; }
-.fact span { font-size: 15px; letter-spacing: 0.4px; opacity: .8; }
+.tile { padding: 24px 28px 22px; border-radius: var(--shape-xl); background: var(--surface); color: var(--on-surface); box-shadow: var(--elev-3); }
+.tile[hidden] { display: none; }
+.tile-air { background: var(--plane); color: var(--ink); }
+/* Header: leading icon + title-medium label */
+.tile-head { display: flex; align-items: center; margin-bottom: 12px; }
+.tile-head h2 { margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: 0.1px; }
+.air-icon { flex: none; margin-right: 12px; font-size: 30px; color: inherit; }
+.iss-icon, .heli-icon { width: 30px; height: 30px; fill: currentColor; }
+/* Body: headline, supporting line, three facts separated by hairlines */
+.air-body { font-size: 20px; line-height: 28px; color: inherit; }
+.air-body strong { font-weight: 500; color: inherit; }
+.flight { font-size: 40px; line-height: 46px; font-weight: 600; letter-spacing: -0.5px; }
+.flight-sub { margin-top: 2px; font-size: 20px; opacity: 0.8; }
+.facts { display: flex; margin-top: 16px; padding-top: 14px; border-top: 1px solid currentColor; border-top-color: rgba(127, 127, 127, 0.35); }
+.fact { flex: 1; min-width: 0; }
+.fact + .fact { margin-left: 12px; }
+.fact b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 15px; letter-spacing: 0.4px; opacity: 0.75; }
 
-/* Rare aircraft of the last 24 h (top right) */
-.rare-log { position: absolute; right: 36px; top: 36px; z-index: 2; min-width: 260px; max-width: 380px; padding: 12px 18px 10px; border-radius: var(--radius-l);
-  background: var(--log-bg); border: 1px solid var(--outline); color: var(--on-surface-var); font-size: 15px; line-height: 20px; }
-.rare-log[hidden] { display: none; }
-.rare-log h3 { margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; opacity: .75; }
-.rare-row { display: flex; align-items: baseline; white-space: nowrap; }
-.rare-row + .rare-row { margin-top: 4px; }
-.rare-row b { color: var(--plane); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-.rare-row .why { margin-left: 8px; opacity: .7; overflow: hidden; text-overflow: ellipsis; }
-.rare-row time { margin-left: auto; padding-left: 14px; font-variant-numeric: tabular-nums; }
-.attribution { position: absolute; right: 36px; bottom: 6px; font-size: 11px; color: var(--attr); }
-
-/* HB marker */
-.hb-marker { position: relative; width: 0; height: 0; }
-.hb-marker .ring { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; border-radius: 50%; border: 3px solid #fff; background: rgba(var(--wash), 0.9); }
-.hb-marker .pulse { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7); animation: pulse 3s ease-out infinite; }
-.hb-marker .name { position: absolute; left: 22px; top: -17px; height: 34px; padding: 0 14px; border-radius: var(--radius-l); background: #fff; color: var(--ink); font-size: 19px; font-weight: 700; line-height: 34px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
-@keyframes pulse { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
-
-/* Zuhause marker – same white ring + name pill as the HB marker, with the Material Symbols "home" glyph */
-.home-marker { z-index: 2; }
-.home-marker .name { display: flex; align-items: center; padding-left: 10px; }
-.home-marker .material-symbols-rounded { margin-right: 6px; font-family: 'Material Symbols Rounded'; font-size: 22px; line-height: 1; font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24; -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga'; }
-
-/* ISS – space style: deep night-sky card with stars, glowing row in the list */
-.tile-iss { position: relative; overflow: hidden; color: #fff; border: 1px solid rgba(180, 200, 255, 0.45);
+/* ISS: the one special card – night sky, stars and a slow glow */
+.tile-iss { position: relative; overflow: hidden; color: #fff;
   background: radial-gradient(1.5px 1.5px at 12% 22%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 38% 70%, #fff 50%, transparent 51%),
     radial-gradient(1.5px 1.5px at 66% 18%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 84% 58%, #fff 50%, transparent 51%),
     radial-gradient(1px 1px at 22% 86%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 92% 88%, #fff 50%, transparent 51%),
     radial-gradient(ellipse at 100% 0, rgba(110, 140, 255, 0.55), transparent 60%), linear-gradient(160deg, #0b1030 0%, #1b1450 60%, #2a1060 100%);
   box-shadow: 0 0 0 1px rgba(150, 175, 255, 0.25), 0 0 36px rgba(110, 140, 255, 0.45), 0 8px 28px rgba(0, 0, 0, 0.4); animation: iss-glow 3s ease-in-out infinite; }
-.tile-iss .air-body, .tile-iss .air-body strong { color: #fff; }
 .tile-iss .flight-sub, .tile-iss .fact span { color: #c9d3ff; opacity: 1; }
-.iss-icon { width: 30px; height: 30px; fill: #c9d3ff; }
-.heli-icon { width: 30px; height: 30px; fill: currentColor; }
+.tile-iss .iss-icon { fill: #c9d3ff; }
+.tile-iss .facts { border-top-color: rgba(201, 211, 255, 0.3); }
 @keyframes iss-glow { 0%, 100% { box-shadow: 0 0 0 1px rgba(150, 175, 255, 0.25), 0 0 24px rgba(110, 140, 255, 0.3), 0 8px 28px rgba(0, 0, 0, 0.4); }
   50% { box-shadow: 0 0 0 1px rgba(150, 175, 255, 0.5), 0 0 44px rgba(110, 140, 255, 0.6), 0 8px 28px rgba(0, 0, 0, 0.4); } }
-.rare-row.is-iss { align-items: center; margin: 2px -8px 6px; padding: 5px 8px; border-radius: 10px;
+
+/* ---------- "Seltenes" list (top right): M3 outlined card with a label and dense list items ---------- */
+.rare-log { position: absolute; right: 36px; top: 36px; z-index: 2; min-width: 300px; max-width: 400px; padding: 14px 20px 12px; border-radius: var(--shape-lg);
+  background: var(--log-bg); box-shadow: inset 0 0 0 1px var(--outline), var(--elev-2); color: var(--on-surface-var); font-size: 16px; line-height: 22px; }
+.rare-log[hidden] { display: none; }
+.rare-log h3 { margin: 0 0 8px; font-size: 13px; line-height: 16px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--ok); }
+.rare-row { display: flex; align-items: baseline; white-space: nowrap; }
+.rare-row + .rare-row { margin-top: 6px; }
+.rare-row b { color: var(--on-surface); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.rare-row .why { margin-left: 8px; opacity: 0.75; overflow: hidden; text-overflow: ellipsis; }
+.rare-row time { margin-left: auto; padding-left: 16px; font-variant-numeric: tabular-nums; }
+.rare-row.is-iss { align-items: center; margin: 2px -8px 6px; padding: 5px 8px; border-radius: var(--shape-md);
   background: linear-gradient(90deg, rgba(110, 140, 255, 0.32), rgba(110, 140, 255, 0.06)); }
 .rare-row.is-iss svg { width: 18px; height: 18px; margin-right: 8px; flex: none; fill: #c9d3ff; }
 .rare-row.is-iss b { color: #dfe5ff; letter-spacing: 1px; }
+
+/* ---------- Map markers (HB, Flughafen, Zuhause): ring + label chip ---------- */
+.hb-marker { position: relative; width: 0; height: 0; }
+.hb-marker .ring { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; border-radius: 50%; border: 3px solid #fff; background: rgba(var(--wash), 0.9); }
+.hb-marker .pulse { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7); animation: pulse 3s ease-out infinite; }
+.hb-marker .name { position: absolute; left: 22px; top: -17px; height: 34px; padding: 0 14px; border-radius: var(--shape-lg); background: #fff; color: var(--ink);
+  font-size: 19px; font-weight: 700; line-height: 34px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); }
+@keyframes pulse { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(3.2); opacity: 0; } }
+.home-marker { z-index: 2; }
+.home-marker .name { display: flex; align-items: center; padding-left: 10px; }
+.home-marker .material-symbols-rounded { margin-right: 6px; font-size: 22px; }
+
+/* ---------- Attribution ---------- */
+.attribution { position: absolute; right: 36px; bottom: 6px; font-size: 11px; color: var(--attr); }

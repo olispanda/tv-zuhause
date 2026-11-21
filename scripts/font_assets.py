@@ -13,6 +13,18 @@ from private_files import check_widget, generated_path, private_path, secret_con
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_FONT_IDS = ['geist', 'newsreader']
+# Household files (ignored by Git). A personal build packages them when present; a public export, or a
+# checkout without them, gets these defaults so the widget never references a missing script.
+LOCAL_DEFAULTS = {
+    'local-config.js': b'/* Default household settings; see local-config.example.js. */\nwindow.CleanFrameLocal = {};\n',
+    'standby/js/local-config.js': b'/* Default standby settings; see local-config.example.js. */\nwindow.HBLocalConfig = {};\n',
+}
+
+
+def local_defaults(root=ROOT, include_private=True):
+    """Default bytes for each household file that must not, or cannot, come from app/."""
+    return {name: data for name, data in LOCAL_DEFAULTS.items()
+            if not include_private or not (root / 'app' / name).is_file()}
 PRIVATE_FONTS = [
     {
         'id': 'montreal', 'family': 'Study Montreal', 'folder': 'neue-montreal',
@@ -70,6 +82,7 @@ def write_widget_archive(output, root=ROOT, include_private=True, identity=None)
     """Create an unsigned archive without reading signing or device settings."""
     app = root / 'app'
     overlay = font_overlay(root, include_private)
+    overlay.update(local_defaults(root, include_private))
     if identity is not None:
         overlay['config.xml'] = override_identity((app / 'config.xml').read_bytes(), identity)
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, allowZip64=False) as package:

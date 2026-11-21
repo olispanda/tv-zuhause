@@ -1,8 +1,10 @@
 /* Public Tizen application APIs. No Mac server, network address or credentials. */
 (function () {
   'use strict';
-  var INPUT_NAMES = { /* HDMI-Portnummer: Name, z.B. 2: 'Nintendo Switch' */ };
-  function inputName(n) { return INPUT_NAMES[n] ? INPUT_NAMES[n] : 'HDMI ' + n; }
+  // Household settings come from the ignored local-config.js (see local-config.example.js), never from this file.
+  var LOCAL = window.CleanFrameLocal || {};
+  var INPUT_NAMES = LOCAL.inputNames && typeof LOCAL.inputNames === 'object' ? LOCAL.inputNames : {};
+  function inputName(n) { return typeof INPUT_NAMES[n] === 'string' && INPUT_NAMES[n] ? INPUT_NAMES[n].slice(0, 40) : 'HDMI ' + n; }
   var IDS = {
     stremio: 'IkWsFHtOY9.Stremio', netflix: 'org.tizen.netflix-app',
     disneyplus: 'MCmYXNxgcu.DisneyPlus', youtube: '9Ur5IzDKqV.TizenYouTube',
@@ -18,7 +20,11 @@
     'KaLitts8bq.tenplaySamsungTizen', 'eYuOiOLYQX.KayoSports', 'Ne2ZsPWdKl.9NOW',
     '3KA0pm7a7V.TubiTV', 'rJeHak5zRg.Spotify', 'icp4AvUPiA.7plus'];
   var CONSUMER_SYSTEM = ['org.tizen.browser', 'com.microsoft.copilot'];
+  // Extra bundled marks (assets/icons/<mark>.svg) by native app ID, or by exact app name when the regional ID varies.
   var EXTRA_BRANDS = {'rJeHak5zRg.Spotify': 'spotify', '5b8c3eb16b.BeamCTVDev': 'hbomax', 'cj37Ni3qXM.HBONow': 'hbomax', '3KA0pm7a7V.TubiTV': 'tubi'};
+  var NAME_BRANDS = { plex: 'plex' };
+  if (LOCAL.brands && typeof LOCAL.brands === 'object') Object.keys(LOCAL.brands).forEach(function (id) { if (typeof LOCAL.brands[id] === 'string') EXTRA_BRANDS[id] = LOCAL.brands[id]; });
+  function extraBrand(a) { return EXTRA_BRANDS[a.id] || NAME_BRANDS[String(a.name).replace(/^\s+|\s+$/g, '').toLowerCase()] || ''; }
   var INTERNAL = ['adplatform.ADPlayer', 'WykOS4t4F0.cmsWebApp', '25emanual3.emanual',
     'd0m1lV1nt2.emanual', '2022ePop01.SmartTV',
     'ZODRT12q2l.WebAccountExtension', 'ByJlgt0XeD.CastSettingsApp', 'tv6pbVMQFF.PrivacyChoices'];
@@ -35,7 +41,7 @@
     done({ message: 'Open CleanFrame on the TV to use this control.', detail: 'The web preview cannot control the TV.' });
   }
   function failure(err) {
-    return { message: 'The TV could not open this screen.', detail: err && (err.message || err.name) || 'Try again, or press the remoteâ€™s Home button to return to CleanFrame.' };
+    return { message: 'The TV could not open this screen.', detail: err && (err.message || err.name) || 'Try again, or press the remote’s Home button to return to CleanFrame.' };
   }
   function bounded(done, timeout) {
     var finished = false, timer = setTimeout(function () { finish({ message: 'The TV did not respond. Please try again.' }); }, timeout || 8000);
@@ -94,7 +100,7 @@
           if (selected && (selected.type !== 'HDMI' || selected.number !== port)) { finish({ message: 'The TV selected a different input. Please try again.' }); return; }
           try {
             app.launch('org.tizen.tv-viewer', function () { finish(null, input); }, function () {
-              finish({ message: 'The input was selected, but the TV viewer could not open.', detail: 'Use the remoteâ€™s Source control to view the input.' });
+              finish({ message: 'The input was selected, but the TV viewer could not open.', detail: 'Use the remote’s Source control to view the input.' });
             });
           } catch (error) { finish({ message: 'The input was selected, but the TV viewer could not open.' }); }
         }, function (error) { if (!finished) finish(failure(error)); });
@@ -138,7 +144,7 @@
           if (/-dummy$/.test(a.id) || a.id === 'com.samsung.tv.cobalt-yt') return;
           if (!primary && PROMO.test(a.name + ' ' + a.id)) return;
           seen[a.id] = true;
-          result.push({ appId: a.id, name: a.name, brand: known[a.id] || EXTRA_BRANDS[a.id] || '', icon: a.iconPath || '', rank: primary ? Object.keys(IDS).indexOf(known[a.id]) : (stream ? 20 : 30) });
+          result.push({ appId: a.id, name: a.name, brand: known[a.id] || extraBrand(a), icon: a.iconPath || '', rank: primary ? Object.keys(IDS).indexOf(known[a.id]) : (stream ? 20 : 30) });
         });
         result.sort(function (a, b) { return a.rank - b.rank || a.name.toLowerCase().localeCompare(b.name.toLowerCase()); });
         finish(null, result);

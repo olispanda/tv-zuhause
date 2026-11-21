@@ -47,3 +47,6 @@ PP*.woff2
 # Standby map build tools (Mac only)
 /standby/tools/node_modules/
 /app/standby/js/local-config.js
+
+# Household launcher settings (input names, extra marks, location); see app/local-config.example.js
+/app/local-config.js

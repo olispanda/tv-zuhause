@@ -1,10 +1,11 @@
 /* Day / night palette for the launcher, matching the two standby map themes (app/standby/js/config.js):
    day = Petrol & Koralle, night = Graphit & Gold. Switched by the sun like the map: 'day' while the sun is above
-   -6 degrees (civil dusk) at Zürich, otherwise 'night'. The palette is a class on <html>, so main.js can rewrite the
+   -6 degrees (civil dusk) at Zürich HB (or CleanFrameLocal.location), otherwise 'night'. The palette is a class on <html>, so main.js can rewrite the
    stage's classes freely. Preview one in the browser with ?theme=day or ?theme=night. */
 (function () {
   'use strict';
-  var LON = 8.540212, LAT = 47.378176, DAY_FROM_SUN = -6;
+  var LOCAL = window.CleanFrameLocal || {}, PLACE = LOCAL.location && typeof LOCAL.location[0] === 'number' ? LOCAL.location : [8.540212, 47.378176];
+  var LON = PLACE[0], LAT = PLACE[1], DAY_FROM_SUN = -6;
   var root = document.documentElement, current = null;
   var forced = (/[?&]theme=(day|night)/.exec(window.location.search) || [])[1] || null;
 
