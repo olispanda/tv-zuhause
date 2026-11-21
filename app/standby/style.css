@@ -21,6 +21,10 @@ body { font-family: var(--ui-font, 'Space Grotesk'), system-ui, sans-serif; colo
   background: radial-gradient(ellipse at 0 0, rgba(var(--wash), 0.92) 0%, rgba(var(--wash), 0.6) 40%, rgba(var(--wash), 0) 72%); }
 .corner { position: absolute; left: 48px; top: 36px; z-index: 2; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55); }
 .clock { font-size: 132px; line-height: 128px; font-weight: 700; letter-spacing: -3px; font-variant-numeric: tabular-nums; color: #fff; }
+/* Once the map is ready, main.js draws the wash and the time into the map below trains and aircraft
+   (they pass over it). The HTML clock keeps its space so the live chip stays in place. */
+.stage.clock-in-map::before { display: none; }
+.stage.clock-in-map .clock { visibility: hidden; }
 .live { display: flex; align-items: center; margin-top: 16px; font-size: 18px; font-weight: 500; color: var(--on-surface-var); }
 .live .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); margin-right: 10px; animation: live 2.4s ease-out infinite; }
 .live.is-warn .dot { background: var(--plane); animation: none; }

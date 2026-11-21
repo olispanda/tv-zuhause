@@ -28,8 +28,9 @@
   useTheme(pickTheme());
 
   /* UI font: config.font, or ?font=Family for comparing in the browser preview. */
+  var uiFont = C.font;
   (function () {
-    var m = /[?&]font=([^&]+)/.exec(location.search), fam = m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : C.font;
+    var m = /[?&]font=([^&]+)/.exec(location.search), fam = uiFont = m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : C.font;
     if (fam !== 'Space Grotesk') {   // index.html already loads the default font
       var l = document.createElement('link'); l.rel = 'stylesheet';
       l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(fam).replace(/%20/g, '+') + ':wght@400;500;600;700&display=swap';
@@ -69,6 +70,7 @@
     map.addSource('planes', { type: 'geojson', data: empty });
 
     TrainIcons.add(map);
+    addCorner();
     map.addLayer({ id: 'train-glow', type: 'circle', source: 'trains', filter: ['==', ['get', 'tunnel'], 0],
       paint: { 'circle-radius': ['case', ['get', 'special'], 34, 15], 'circle-color': kindColor(), 'circle-opacity': ['case', ['get', 'special'], 0.4, 0.14], 'circle-blur': 0.7 } });
     map.addLayer({ id: 'train-icon', type: 'symbol', source: 'trains', layout: {
@@ -94,10 +96,7 @@
       'text-anchor': 'left', 'text-offset': [1.4, 0], 'text-optional': true },
       paint: { 'icon-color': COL.plane, 'icon-opacity': ['case', ['get', 'ground'], 0.55, 1], 'icon-halo-color': theme.halo, 'icon-halo-width': 1.5, 'text-color': COL.plane, 'text-halo-color': theme.halo, 'text-halo-width': 1.6 } });
 
-    var el = document.createElement('div');
-    el.className = 'hb-marker';
-    el.innerHTML = '<div class="pulse"></div><div class="ring"></div><div class="name">Zürich HB</div>';
-    new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(HB.p).addTo(map);
+    addPlace(HB, 'train');
 
     // Zuhause – the most important point on the map; aircraft overflights are measured from here.
     if (C.home) addHome();
@@ -106,7 +105,54 @@
     Rails.load('data/rails.json').then(function () { Trains.start(); Planes.start(); ISS.start(); frame(); setInterval(ui, 1000); ui(); });
   });
   function addHome() { addPlace(C.home, 'home'); }
-  // A named place with a Material Symbols glyph (home, flight) – same white ring + name pill as the HB marker.
+
+  /* ---------- Corner clock inside the map ----------
+     The clock and its dark wash are drawn on a canvas that sits in the map as a raster layer below the
+     trains and aircraft, so they pass over the time instead of disappearing behind it. The camera is fixed,
+     so the canvas covers exactly the stage pixels 0…CORNER_W × 0…CORNER_H. The HTML clock (#clock) stays as
+     the fallback until the map is ready; the live chip below it stays HTML. */
+  var CORNER_W = 900, CORNER_H = 420, cornerCanvas = document.createElement('canvas'), cornerText = null, cornerReady = false;
+  function clockText() { return new Date().toLocaleTimeString('de-CH', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }); }
+  function drawCorner(text) {
+    var r = Math.min(2, window.devicePixelRatio || 1), c = cornerCanvas, g, grad, i, cell = 0, x, w;
+    if (c.width !== CORNER_W * r) { c.width = CORNER_W * r; c.height = CORNER_H * r; }
+    g = c.getContext('2d');
+    g.setTransform(r, 0, 0, r, 0, 0);
+    g.clearRect(0, 0, CORNER_W, CORNER_H);
+    // Wash: same as the former CSS radial-gradient(ellipse at 0 0, …) – farthest-corner ellipse with radii W·√2, H·√2.
+    var wash = theme.ui['--wash'];
+    g.save(); g.scale(1, CORNER_H / CORNER_W);
+    grad = g.createRadialGradient(0, 0, 0, 0, 0, CORNER_W * Math.SQRT2);
+    grad.addColorStop(0, 'rgba(' + wash + ',0.92)'); grad.addColorStop(0.4, 'rgba(' + wash + ',0.6)'); grad.addColorStop(0.72, 'rgba(' + wash + ',0)');
+    g.fillStyle = grad; g.fillRect(0, 0, CORNER_W, CORNER_W);
+    g.restore();
+    // Time: 132px bold, tabular digits, -3px tracking, soft shadow – as .clock in style.css.
+    g.font = '700 132px "' + uiFont + '", system-ui, sans-serif';
+    g.textBaseline = 'middle'; g.fillStyle = '#fff';
+    g.shadowColor = 'rgba(0, 0, 0, 0.55)'; g.shadowBlur = 18 * r; g.shadowOffsetY = 2 * r;
+    for (i = 0; i <= 9; i++) cell = Math.max(cell, g.measureText(String(i)).width);
+    x = 48;
+    for (i = 0; i < text.length; i++) {
+      w = /\d/.test(text[i]) ? cell : g.measureText(text[i]).width;
+      g.fillText(text[i], x + (w - g.measureText(text[i]).width) / 2, 36 + 64);
+      x += w - 3;
+    }
+    cornerText = text;
+    var src = cornerReady && map.getSource('corner');
+    if (src) { src.play(); map.once('render', function () { src.pause(); }); }   // pause() uploads the new canvas once
+  }
+  function addCorner() {
+    drawCorner(clockText());
+    var px = function (x, y) { var l = map.unproject([x, y]); return [l.lng, l.lat]; };
+    map.addSource('corner', { type: 'canvas', canvas: cornerCanvas, animate: false,
+      coordinates: [px(0, 0), px(CORNER_W, 0), px(CORNER_W, CORNER_H), px(0, CORNER_H)] });
+    map.addLayer({ id: 'corner', type: 'raster', source: 'corner', paint: { 'raster-fade-duration': 0 } });
+    cornerReady = true;
+    stage.className += ' clock-in-map';
+    // The canvas only draws with the UI font once it is loaded.
+    if (document.fonts && document.fonts.load) document.fonts.load('700 132px "' + uiFont + '"').then(function () { drawCorner(clockText()); });
+  }
+  // A named place with a Material Symbols glyph (train, home, flight): white ring + name pill.
   function addPlace(place, icon) {
     var el = document.createElement('div');
     el.className = 'hb-marker home-marker';
@@ -130,6 +176,7 @@
     ['icon-color', 'text-color'].forEach(function (k) { map.setPaintProperty('plane', k, COL.plane); });
     ['icon-halo-color', 'text-halo-color'].forEach(function (k) { map.setPaintProperty('plane', k, theme.halo); });
     Object.keys(cardEls).forEach(function (k) { cardEls[k].parentNode.removeChild(cardEls[k]); delete cardEls[k]; delete cardSeen[k]; });   // rebuilt in the new colours
+    if (cornerReady) drawCorner(clockText());   // wash in the new theme colour
   }
   setInterval(function () { var n = pickTheme(); if (n !== themeName && map.isStyleLoaded()) switchTheme(n); }, 60000);
   window.HBTheme = function (name) { forced = name; switchTheme(name); };   // console helper for the preview
@@ -207,7 +254,9 @@
 
   function ui() {
     var now = new Date();
-    $('clock').textContent = now.toLocaleTimeString('de-CH', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+    var time = clockText();
+    $('clock').textContent = time;
+    if (cornerReady && time !== cornerText) drawCorner(time);
 
     var ts = Trains.status(), ps = Planes.status(), chip = $('liveChip');
     chip.className = 'live' + (ts.quiet ? ' is-quiet' : ts.error || ps.error ? ' is-warn' : '');
