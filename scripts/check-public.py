@@ -128,7 +128,8 @@ for path in private_fonts:
         findings.append('Known proprietary font bytes in Git history: ' + path.name)
 
 for name in ['app/assets/fonts/geist/OFL.txt', 'app/assets/fonts/newsreader/OFL.txt', 'app/assets/manrope-OFL.txt'] + (
-        ['app/standby/fonts/OFL-SpaceGrotesk.txt', 'app/standby/fonts/Apache-2.0-MaterialSymbols.txt', 'app/standby/vendor/LICENSE.txt']
+        ['app/standby/fonts/OFL-SpaceGrotesk.txt', 'app/standby/fonts/Apache-2.0-MaterialSymbols.txt', 'app/standby/vendor/LICENSE.txt',
+         'app/standby/vendor/LICENSE-satellite.txt']
         if (ROOT / 'app/standby').is_dir() else []):
     if not (ROOT / name).is_file():
         findings.append('Missing public font licence: ' + name)

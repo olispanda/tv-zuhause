@@ -29,8 +29,9 @@ Brand marks identify services. Their owners retain trademark rights; this projec
 | Space Grotesk (`app/standby/fonts/`) | SIL Open Font License 1.1; `app/standby/fonts/OFL-SpaceGrotesk.txt`. Sources and hashes in `app/standby/fonts/SOURCES.json`. |
 | Material Symbols Rounded subset (flight, home, train) | Apache License 2.0; `app/standby/fonts/Apache-2.0-MaterialSymbols.txt`. Subset of Google's Material Symbols; source record in `app/standby/fonts/SOURCES.json`. |
 | MapLibre GL JS 4.7.1 (`app/standby/vendor/`) | 3-Clause BSD; `app/standby/vendor/LICENSE.txt`, shipped unchanged. |
+| satellite.js 5.0.0 (`app/standby/vendor/satellite.min.js`) | MIT; `app/standby/vendor/LICENSE-satellite.txt`, shipped unchanged. Computes missed ISS passes from orbital elements. |
 | Map tiles, rail network and station data | © OpenStreetMap contributors (ODbL), served by OpenFreeMap with OpenMapTiles schema; terrain from the Mapzen/Terrarium elevation tiles. `app/standby/data/rails.json` is derived from OpenStreetMap (via OpenFreeMap) and keeps its ODbL terms; `stations.json` holds station IDs and coordinates from transport.opendata.ch. The on-screen attribution in `app/standby/index.html` must stay visible. |
-| Live data | Timetables from transport.opendata.ch, aircraft from adsb.lol, ISS position from wheretheiss.at; fetched at runtime, not bundled. |
+| Live data | Timetables from transport.opendata.ch, aircraft from adsb.lol, ISS position and orbital elements (TLE) from wheretheiss.at; fetched at runtime, not bundled. |
 
 ## Photographs and derived materials
 

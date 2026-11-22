@@ -94,8 +94,10 @@ window.HBConfig = {
   },
 
   // ISS passes over home (wheretheiss.at, free, no key). Counted when it rises above minElevation degrees;
-  // shown as a special card while overhead and kept in the list top right for rare.logHours.
-  iss: { api: 'https://api.wheretheiss.at/v1/satellites/25544', minElevation: 25, pollSec: 30 },
+  // shown as a special card while overhead and kept in the list top right for rare.logHours (latest logMax passes).
+  // Passes missed while the TV was off are computed afterwards from the orbital elements (tleApi, satellite.js).
+  iss: { api: 'https://api.wheretheiss.at/v1/satellites/25544', tleApi: 'https://api.wheretheiss.at/v1/satellites/25544/tles?format=json',
+    minElevation: 25, pollSec: 30, logMax: 2 },
 
   // Two dark themes, switched by the sun at home: 'day' while the sun is above dayFromSun degrees
   // (-6 = civil dusk), 'night' otherwise. Preview one in the browser with ?theme=day or ?theme=night.

@@ -307,11 +307,17 @@
   var ISS_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 9h4v6h-4zM11.25 3h1.5v18h-1.5zM1 7h7v4H1zM1 13h7v4H1zM16 7h7v4h-7zM16 13h7v4h-7zM8 11.25h8v1.5H8z"/></svg>';
   function logRare(planes, iss, nowMs) {
     var R = C.rare || {}, keepMs = (R.logHours || 24) * 3600000, changed = false;
-    // ISS passes (running and finished) – one entry per pass.
+    // ISS passes (running, finished and computed afterwards) – one entry per pass. A pass seen live and
+    // also computed from the orbit (or seen again after a restart) overlaps in time and is merged.
     iss.finished.concat(iss.pass ? [iss.pass] : []).forEach(function (ps) {
-      var k = 'iss-' + ps.start;
-      if (!rareLog[k]) changed = true;
-      rareLog[k] = { iss: true, first: ps.start, t: ps.t, name: 'ISS', maxEl: Math.round(ps.maxEl), visible: ps.visible, over: false };
+      var k = 'iss-' + ps.start, e = rareLog[k];
+      if (!e) Object.keys(rareLog).forEach(function (j) {
+        var o = rareLog[j];
+        if (!e && o.iss && o.first - 300000 <= ps.t && ps.start <= o.t + 300000) { e = o; k = j; }
+      });
+      if (!e) { changed = true; rareLog[k] = { iss: true, first: ps.start, t: ps.t, name: 'ISS', maxEl: Math.round(ps.maxEl), visible: ps.visible, over: false, calc: !!ps.calc }; return; }
+      e.first = Math.min(e.first, ps.start); e.t = Math.max(e.t, ps.t); e.maxEl = Math.max(e.maxEl, Math.round(ps.maxEl));
+      e.visible = e.visible || ps.visible; e.calc = e.calc && !!ps.calc;
     });
     planes.forEach(function (a) {
       if (!a.rare || a.ground || !inView(a.p) || (R.logReasons || []).indexOf(a.rare) < 0) return;
@@ -322,7 +328,10 @@
     Object.keys(rareLog).forEach(function (k) { if (nowMs - rareLog[k].t > keepMs) { delete rareLog[k]; changed = true; } });
     if (changed || nowMs - logSaved > 60000) { saveLog(); logSaved = nowMs; }
 
-    var rows = Object.keys(rareLog).map(function (k) { return rareLog[k]; }).sort(function (x, y) { return y.t - x.t; }).slice(0, 6);
+    // At most iss.logMax ISS passes (the latest), so a few passes a day don't push rare aircraft out.
+    var issMax = (C.iss || {}).logMax || 2, issShown = 0;
+    var rows = Object.keys(rareLog).map(function (k) { return rareLog[k]; }).sort(function (x, y) { return y.t - x.t; })
+      .filter(function (e) { return !e.iss || issShown++ < issMax; }).slice(0, 6);
     var html = rows.length ? '<h3>Seltenes · letzte ' + (R.logHours || 24) + ' h</h3>' + rows.map(function (e) {
       if (e.iss) return '<div class="rare-row is-iss">' + ISS_ICON + '<b>ISS</b><span class="why">' + esc('max ' + e.maxEl + '°' + (e.visible ? ' · sichtbar' : '')) + '</span><time>' + hhmm(e.first / 1000) + '</time></div>';
       return '<div class="rare-row"><b>' + esc(e.name) + '</b><span class="why">' + esc(e.over ? 'Überflug' : e.why) + '</span><time>' + hhmm(e.first / 1000) + '</time></div>';
